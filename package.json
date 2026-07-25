@@ -1,0 +1,13 @@
+{
+  "name": "email-signature-generator",
+  "version": "1.0.0",
+  "description": "Self-service email signature generator with AI-assisted field extraction",
+  "private": true,
+  "scripts": {
+    "dev": "node lambda/dev-server.js",
+    "test": "cd lambda && npm test",
+    "generate-test": "node scripts/generate-test.js"
+  },
+  "keywords": ["email-signature", "serverless", "aws-lambda"],
+  "license": "MIT"
+}
