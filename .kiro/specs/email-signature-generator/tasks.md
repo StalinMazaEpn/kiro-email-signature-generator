@@ -16,6 +16,8 @@ Implement a serverless email signature generator as a monorepo with Vanilla JS f
 | 5. Lambda handlers | ✅ Done | 13 tests |
 | 6. Checkpoint | ✅ Done | 70 total |
 | 7. Frontend | ✅ Done | — |
+| 7.5 Enhancement: Download/Open signature | ⬜ Pending | — |
+| 7.6 Enhancement: AI extraction UX + field config | ⬜ Pending | — |
 | 8. Admin panel | ⬜ Pending | — |
 | 9. Checkpoint | ⬜ Pending | — |
 | 10. Infra & docs | ⬜ Pending | — |
@@ -139,6 +141,27 @@ Implement a serverless email signature generator as a monorepo with Vanilla JS f
   - [x] 7.4 Implement preview rendering logic
     - Created `frontend/js/preview.js` — iframe rendering with auto-height, separate preview/output areas
     - _Requirements: 4.1_
+
+- [ ] 7.5 Enhancement: Download and open generated signature
+  - [ ] 7.5.1 Add "Download HTML" button to output section
+    - Generate a downloadable `.html` file from the generated signature HTML
+    - Use Blob + URL.createObjectURL for client-side download
+  - [ ] 7.5.2 Add "Open in new window" button to output section
+    - Open the generated HTML in a new browser tab/window using window.open + document.write
+
+- [ ] 7.6 Enhancement: AI extraction UX improvements and field config
+  - [ ] 7.6.1 Create project field configuration file
+    - Create `frontend/js/fieldConfig.js` with a centralized config object defining which fields are required/optional, their labels, and placeholder text
+    - This file is the single source of truth: changing required fields here propagates to validation, form rendering, and AI extraction feedback without touching app code
+  - [ ] 7.6.2 Clear form before pre-filling from AI extraction
+    - When "Extraer campos con IA" succeeds, first clear ALL form fields, then populate with extracted values
+    - This ensures stale data from a previous extraction is removed and user sees exactly what the AI found
+  - [ ] 7.6.3 Show missing required fields feedback after AI extraction
+    - After pre-filling, check extracted fields against required fields from `fieldConfig.js`
+    - If any required field is missing (null/empty), show a warning message below the AI input listing which fields are missing
+    - Include a helpful suggestion on how to include those fields in the text (e.g. "Intenta incluir tu email en el texto, por ejemplo: 'mi correo es usuario@empresa.com'")
+    - Non-required missing fields should NOT trigger warnings
+    - Fields that WERE extracted successfully still populate the form normally
 
 - [ ] 8. Implement admin panel
   - [ ] 8.1 Create admin HTML page and authentication module
