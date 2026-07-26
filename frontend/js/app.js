@@ -2,7 +2,7 @@
 
 /**
  * Main application logic.
- * Handles form submission, AI extraction, preview, and copy-to-clipboard.
+ * Handles form submission, AI extraction, preview, copy-to-clipboard, download, and open in window.
  */
 (function () {
   // DOM references
@@ -11,13 +11,54 @@
   const btnGenerate = document.getElementById('btn-generate');
   const btnExtract = document.getElementById('btn-extract');
   const btnCopy = document.getElementById('btn-copy');
+  const btnDownload = document.getElementById('btn-download');
+  const btnOpenWindow = document.getElementById('btn-open-window');
   const aiText = document.getElementById('ai-text');
   const aiStatus = document.getElementById('ai-status');
   const formStatus = document.getElementById('form-status');
   const imageInput = document.getElementById('image');
 
-  // Store generated HTML for clipboard
+  // Store generated HTML for clipboard/download/open
   let generatedHtml = '';
+
+  // --- Composition Mode ---
+  const compositionRadios = document.querySelectorAll('input[name="compositionMode"]');
+  const advancedParamsDiv = document.getElementById('advanced-params');
+
+  compositionRadios.forEach(radio => {
+    radio.addEventListener('change', () => {
+      if (radio.value === 'advanced') {
+        advancedParamsDiv.classList.remove('hidden');
+      } else {
+        advancedParamsDiv.classList.add('hidden');
+      }
+    });
+  });
+
+  /**
+   * Returns image composition parameters based on the selected mode.
+   * @returns {object}
+   */
+  function getCompositionParams() {
+    const mode = document.querySelector('input[name="compositionMode"]:checked').value;
+    switch (mode) {
+      case 'centered':
+        return { scalePercent: 100, horizontalAlign: 'center', verticalAlign: 'center', paddingPercent: 0 };
+      case 'bottom':
+        return { scalePercent: 80, horizontalAlign: 'center', verticalAlign: 'bottom', paddingPercent: 0 };
+      case 'advanced':
+        return {
+          scalePercent: parseInt(document.getElementById('scalePercent').value, 10),
+          paddingPercent: parseInt(document.getElementById('paddingPercent').value, 10),
+          horizontalAlign: document.getElementById('horizontalAlign').value,
+          verticalAlign: document.getElementById('verticalAlign').value,
+          offsetX: parseInt(document.getElementById('offsetX').value, 10) || 0,
+          offsetY: parseInt(document.getElementById('offsetY').value, 10) || 0,
+        };
+      default:
+        return { scalePercent: 100, horizontalAlign: 'center', verticalAlign: 'center', paddingPercent: 0 };
+    }
+  }
 
   // --- AI Extraction ---
   btnExtract.addEventListener('click', handleExtract);
@@ -40,9 +81,25 @@
         return;
       }
 
+      // Clear form before pre-filling so stale data is removed
+      clearForm();
+
       // Pre-fill form with extracted fields
       prefillForm(result.fields);
-      showStatus(aiStatus, 'Campos extraidos correctamente.', 'success');
+
+      // Check for missing required fields
+      const missing = FieldConfig.getMissingRequired(result.fields);
+      if (missing.length > 0) {
+        const missingList = missing.map(f => `<strong>${f.label}</strong>`).join(', ');
+        const suggestions = missing.map(f => `• ${f.label}: ${f.hint}`).join('<br>');
+        showStatusHtml(aiStatus,
+          `<span class="block mb-1">Campos extraidos, pero faltan datos obligatorios: ${missingList}</span>` +
+          `<span class="block text-xs text-gray-600 mt-1">Sugerencia — en tu texto ${suggestions}</span>`,
+          'warning'
+        );
+      } else {
+        showStatus(aiStatus, 'Todos los campos obligatorios extraidos correctamente.', 'success');
+      }
     } catch (err) {
       showStatus(aiStatus, `Error de conexion: ${err.message}`, 'error');
     } finally {
@@ -51,16 +108,27 @@
   }
 
   /**
+   * Clear all form fields (except template and image).
+   */
+  function clearForm() {
+    FieldConfig.fields.forEach(f => {
+      const el = document.getElementById(f.id);
+      if (el) el.value = '';
+    });
+  }
+
+  /**
    * Pre-fill form fields from extracted data.
    * @param {object} fields - { nombre, cargo, email, telefono, website, linkedin }
    */
   function prefillForm(fields) {
-    if (fields.nombre) document.getElementById('nombre').value = fields.nombre;
-    if (fields.cargo) document.getElementById('cargo').value = fields.cargo;
-    if (fields.email) document.getElementById('email').value = fields.email;
-    if (fields.telefono) document.getElementById('telefono').value = fields.telefono;
-    if (fields.website) document.getElementById('website').value = fields.website;
-    if (fields.linkedin) document.getElementById('linkedin').value = fields.linkedin;
+    FieldConfig.fields.forEach(f => {
+      const value = fields[f.id];
+      if (value) {
+        const el = document.getElementById(f.id);
+        if (el) el.value = value;
+      }
+    });
   }
 
   // --- Preview ---
@@ -91,7 +159,6 @@
       if (imageInput.files && imageInput.files[0]) {
         const dataUrl = await fileToDataUrl(imageInput.files[0]);
         if (dataUrl) {
-          // Replace the placeholder banner URL with the actual image data URL
           html = html.replace(/https:\/\/via\.placeholder\.com[^"']*/g, dataUrl);
         }
       }
@@ -120,6 +187,7 @@
     }
 
     data.image = imageBase64;
+    data.compositionParams = getCompositionParams();
 
     setLoading(btnGenerate, true, 'Generando...');
     hideStatus(formStatus);
@@ -150,13 +218,7 @@
 
     try {
       await navigator.clipboard.writeText(generatedHtml);
-      const originalText = btnCopy.textContent;
-      btnCopy.textContent = 'Copiado!';
-      btnCopy.classList.replace('bg-green-600', 'bg-green-800');
-      setTimeout(() => {
-        btnCopy.textContent = originalText;
-        btnCopy.classList.replace('bg-green-800', 'bg-green-600');
-      }, 2000);
+      flashButton(btnCopy, 'Copiado!', 'bg-green-600', 'bg-green-800');
     } catch (err) {
       // Fallback for older browsers
       const textarea = document.createElement('textarea');
@@ -167,12 +229,67 @@
       textarea.select();
       document.execCommand('copy');
       document.body.removeChild(textarea);
-      btnCopy.textContent = 'Copiado!';
-      setTimeout(() => { btnCopy.textContent = 'Copiar HTML'; }, 2000);
+      flashButton(btnCopy, 'Copiado!', 'bg-green-600', 'bg-green-800');
+    }
+  }
+
+  // --- Download HTML ---
+  btnDownload.addEventListener('click', handleDownload);
+
+  function handleDownload() {
+    if (!generatedHtml) return;
+
+    const fullHtml = wrapSignatureHtml(generatedHtml);
+    const blob = new Blob([fullHtml], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'firma-email.html';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    flashButton(btnDownload, 'Descargado!', 'bg-indigo-600', 'bg-indigo-800');
+  }
+
+  // --- Open in New Window ---
+  btnOpenWindow.addEventListener('click', handleOpenWindow);
+
+  function handleOpenWindow() {
+    if (!generatedHtml) return;
+
+    const fullHtml = wrapSignatureHtml(generatedHtml);
+    const newWindow = window.open('', '_blank');
+    if (newWindow) {
+      newWindow.document.open();
+      newWindow.document.write(fullHtml);
+      newWindow.document.close();
+    } else {
+      showStatus(formStatus, 'El navegador bloqueo la ventana emergente. Permite pop-ups para este sitio.', 'error');
     }
   }
 
   // --- Helpers ---
+
+  /**
+   * Wrap signature HTML fragment in a full HTML document for download/open.
+   */
+  function wrapSignatureHtml(html) {
+    return `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Firma de Email</title>
+  <style>body { margin: 20px; font-family: Arial, sans-serif; }</style>
+</head>
+<body>
+${html}
+</body>
+</html>`;
+  }
 
   /**
    * Get form field values as an object.
@@ -199,7 +316,6 @@
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => {
-        // Strip the data:image/...;base64, prefix
         const base64 = reader.result.split(',')[1];
         resolve(base64);
       };
@@ -210,7 +326,6 @@
 
   /**
    * Convert a File to a full data URL (with the data:image/...;base64, prefix).
-   * Used for preview rendering so images display immediately in the browser.
    * @param {File} file
    * @returns {Promise<string|null>}
    */
@@ -225,10 +340,19 @@
   }
 
   /**
-   * Show a status message.
+   * Show a plain text status message.
    */
   function showStatus(el, message, type) {
     el.textContent = message;
+    el.className = `mt-2 text-sm status-${type}`;
+    el.classList.remove('hidden');
+  }
+
+  /**
+   * Show a status message with HTML content.
+   */
+  function showStatusHtml(el, html, type) {
+    el.innerHTML = html;
     el.className = `mt-2 text-sm status-${type}`;
     el.classList.remove('hidden');
   }
@@ -250,5 +374,18 @@
     } else {
       btn.textContent = text;
     }
+  }
+
+  /**
+   * Flash a button text temporarily.
+   */
+  function flashButton(btn, tempText, originalClass, flashClass) {
+    const originalText = btn.textContent;
+    btn.textContent = tempText;
+    btn.classList.replace(originalClass, flashClass);
+    setTimeout(() => {
+      btn.textContent = originalText;
+      btn.classList.replace(flashClass, originalClass);
+    }, 2000);
   }
 })();

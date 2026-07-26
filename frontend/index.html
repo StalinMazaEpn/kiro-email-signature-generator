@@ -106,6 +106,91 @@
               <p class="text-xs text-gray-400 mt-1">PNG o JPG recomendado. Se usara para generar el banner.</p>
             </div>
 
+            <!-- Image composition mode -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Modo de composicion de imagen</label>
+              <div class="grid grid-cols-3 gap-3">
+                <!-- Centrado -->
+                <label class="cursor-pointer">
+                  <input type="radio" name="compositionMode" value="centered" checked class="peer hidden">
+                  <div class="border-2 border-gray-200 rounded-lg p-3 text-center peer-checked:border-blue-500 peer-checked:bg-blue-50 hover:border-gray-300 transition-colors">
+                    <span class="text-2xl block mb-1">🎯</span>
+                    <span class="text-sm font-medium text-gray-700 block">Centrado</span>
+                    <span class="text-xs text-gray-500">100% centro-centro</span>
+                  </div>
+                </label>
+                <!-- Inferior -->
+                <label class="cursor-pointer">
+                  <input type="radio" name="compositionMode" value="bottom" class="peer hidden">
+                  <div class="border-2 border-gray-200 rounded-lg p-3 text-center peer-checked:border-blue-500 peer-checked:bg-blue-50 hover:border-gray-300 transition-colors">
+                    <span class="text-2xl block mb-1">⬇️</span>
+                    <span class="text-sm font-medium text-gray-700 block">Inferior</span>
+                    <span class="text-xs text-gray-500">80% centro-abajo</span>
+                  </div>
+                </label>
+                <!-- Avanzado -->
+                <label class="cursor-pointer">
+                  <input type="radio" name="compositionMode" value="advanced" id="radio-advanced" class="peer hidden">
+                  <div class="border-2 border-gray-200 rounded-lg p-3 text-center peer-checked:border-blue-500 peer-checked:bg-blue-50 hover:border-gray-300 transition-colors">
+                    <span class="text-2xl block mb-1">⚙️</span>
+                    <span class="text-sm font-medium text-gray-700 block">Avanzado</span>
+                    <span class="text-xs text-gray-500">Personalizado</span>
+                  </div>
+                </label>
+              </div>
+
+              <!-- Advanced params (hidden by default) -->
+              <div id="advanced-params" class="hidden mt-3 p-4 bg-gray-50 rounded-lg border border-gray-200 space-y-3">
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label for="scalePercent" class="block text-xs font-medium text-gray-600 mb-1">Escala (%)</label>
+                    <select id="scalePercent" class="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                      <option value="80">80</option>
+                      <option value="90">90</option>
+                      <option value="94" selected>94</option>
+                      <option value="100">100</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label for="paddingPercent" class="block text-xs font-medium text-gray-600 mb-1">Padding (%)</label>
+                    <select id="paddingPercent" class="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                      <option value="0" selected>0</option>
+                      <option value="5">5</option>
+                      <option value="10">10</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label for="horizontalAlign" class="block text-xs font-medium text-gray-600 mb-1">Alineacion horizontal</label>
+                    <select id="horizontalAlign" class="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                      <option value="left">left</option>
+                      <option value="center" selected>center</option>
+                      <option value="right">right</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label for="verticalAlign" class="block text-xs font-medium text-gray-600 mb-1">Alineacion vertical</label>
+                    <select id="verticalAlign" class="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                      <option value="top">top</option>
+                      <option value="center" selected>center</option>
+                      <option value="bottom">bottom</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label for="offsetX" class="block text-xs font-medium text-gray-600 mb-1">Offset X</label>
+                    <input type="number" id="offsetX" value="0" class="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                  </div>
+                  <div>
+                    <label for="offsetY" class="block text-xs font-medium text-gray-600 mb-1">Offset Y</label>
+                    <input type="number" id="offsetY" value="0" class="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <!-- Action buttons -->
             <div class="flex gap-3 pt-2">
               <button
@@ -147,13 +232,29 @@
         <section id="output-section" class="bg-white rounded-lg shadow p-6 hidden">
           <div class="flex items-center justify-between mb-4">
             <h2 class="text-lg font-semibold text-gray-700">Firma generada</h2>
-            <button
-              id="btn-copy"
-              type="button"
-              class="bg-green-600 text-white py-1.5 px-4 rounded-md hover:bg-green-700 transition-colors text-sm font-medium"
-            >
-              Copiar HTML
-            </button>
+            <div class="flex gap-2">
+              <button
+                id="btn-copy"
+                type="button"
+                class="bg-green-600 text-white py-1.5 px-3 rounded-md hover:bg-green-700 transition-colors text-sm font-medium"
+              >
+                Copiar HTML
+              </button>
+              <button
+                id="btn-download"
+                type="button"
+                class="bg-indigo-600 text-white py-1.5 px-3 rounded-md hover:bg-indigo-700 transition-colors text-sm font-medium"
+              >
+                Descargar
+              </button>
+              <button
+                id="btn-open-window"
+                type="button"
+                class="bg-amber-600 text-white py-1.5 px-3 rounded-md hover:bg-amber-700 transition-colors text-sm font-medium"
+              >
+                Abrir
+              </button>
+            </div>
           </div>
           <div id="output-container" class="border border-gray-200 rounded-md p-4">
             <iframe id="output-iframe" class="w-full" style="min-height: 250px; border: none;"></iframe>
@@ -169,6 +270,7 @@
   </main>
 
   <!-- Scripts -->
+  <script src="js/fieldConfig.js"></script>
   <script src="js/api.js"></script>
   <script src="js/preview.js"></script>
   <script src="js/app.js"></script>

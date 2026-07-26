@@ -21,7 +21,7 @@ async function handler(event) {
       return response(400, { success: false, error: validation.error });
     }
 
-    const { nombre, cargo, email, telefono, website, linkedin, templateId, image } = body;
+    const { nombre, cargo, email, telefono, website, linkedin, templateId, image, compositionParams } = body;
 
     // Decode base64 image
     const imageBuffer = Buffer.from(image, 'base64');
@@ -31,7 +31,7 @@ async function handler(event) {
     const originalUrl = await upload(originalKey, imageBuffer, 'image/png');
 
     // Process banner via image-tools (or local mock)
-    const bannerUrl = await createBanner(originalUrl, nombre, imageBuffer);
+    const bannerUrl = await createBanner(originalUrl, nombre, imageBuffer, compositionParams || {});
 
     // Render template with all fields
     const fields = { nombre, cargo, email, telefono, website, linkedin, bannerUrl };

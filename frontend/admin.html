@@ -4,9 +4,229 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin - Template Validator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/styles.css">
 </head>
-<body>
-  <h1>Admin Panel</h1>
-  <!-- TODO: Implement in Task 8 -->
+<body class="bg-gray-50 min-h-screen">
+  <!-- Header -->
+  <header class="bg-white shadow-sm border-b border-gray-200">
+    <div class="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+      <h1 class="text-2xl font-bold text-gray-800">Admin Panel</h1>
+      <div class="flex items-center gap-4">
+        <a href="index.html" class="text-sm text-gray-500 hover:text-gray-700">Volver al generador</a>
+        <button id="btn-logout" type="button" class="text-sm text-red-500 hover:text-red-700 hidden">Cerrar sesion</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-4xl mx-auto px-4 py-8">
+
+    <!-- Login Section -->
+    <section id="login-section" class="bg-white rounded-lg shadow p-8 max-w-md mx-auto">
+      <h2 class="text-lg font-semibold text-gray-700 mb-4 text-center">Acceso Administrador</h2>
+      <form id="login-form" class="space-y-4">
+        <div>
+          <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Contrasena</label>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            required
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            placeholder="Ingresa la contrasena de admin"
+          >
+        </div>
+        <button
+          type="submit"
+          class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors text-sm font-medium"
+        >
+          Ingresar
+        </button>
+      </form>
+      <div id="login-status" class="mt-3 text-sm hidden"></div>
+    </section>
+
+    <!-- Admin Content (hidden until authenticated) -->
+    <div id="admin-content" class="space-y-6 hidden">
+
+      <!-- Template Validator -->
+      <section class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-lg font-semibold text-gray-700 mb-3">Validador de Templates</h2>
+        <p class="text-sm text-gray-500 mb-4">Pega el codigo HTML/Mustache de una plantilla para validar compatibilidad con clientes de email.</p>
+
+        <textarea
+          id="template-input"
+          rows="12"
+          class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          placeholder="Pega aqui el contenido de tu plantilla Mustache..."
+        ></textarea>
+
+        <div class="flex gap-3 mt-4">
+          <button
+            id="btn-validate"
+            type="button"
+            class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors text-sm font-medium"
+          >
+            Validar template
+          </button>
+          <button
+            id="btn-load-example"
+            type="button"
+            class="bg-gray-200 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-300 transition-colors text-sm font-medium"
+          >
+            Cargar ejemplo
+          </button>
+        </div>
+      </section>
+
+      <!-- Validation Results -->
+      <section id="results-section" class="hidden">
+        <!-- Summary -->
+        <div id="results-summary" class="mb-4 p-4 rounded-lg"></div>
+
+        <!-- Errors -->
+        <div id="results-errors" class="mb-4 hidden">
+          <h3 class="text-sm font-semibold text-red-700 mb-2">Errores (la plantilla no funcionara)</h3>
+          <ul id="errors-list" class="space-y-2"></ul>
+        </div>
+
+        <!-- Warnings -->
+        <div id="results-warnings" class="hidden">
+          <h3 class="text-sm font-semibold text-amber-700 mb-2">Advertencias (puede causar problemas)</h3>
+          <ul id="warnings-list" class="space-y-2"></ul>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Scripts -->
+  <script src="js/auth.js"></script>
+  <script src="js/validator.js"></script>
+  <script>
+    (function () {
+      const loginSection = document.getElementById('login-section');
+      const adminContent = document.getElementById('admin-content');
+      const loginForm = document.getElementById('login-form');
+      const loginStatus = document.getElementById('login-status');
+      const btnLogout = document.getElementById('btn-logout');
+      const btnValidate = document.getElementById('btn-validate');
+      const btnLoadExample = document.getElementById('btn-load-example');
+      const templateInput = document.getElementById('template-input');
+      const resultsSection = document.getElementById('results-section');
+
+      // Check existing session
+      if (Auth.isAuthenticated()) {
+        showAdmin();
+      }
+
+      // Login handler
+      loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const password = document.getElementById('password').value;
+
+        const success = await Auth.login(password);
+        if (success) {
+          showAdmin();
+        } else {
+          loginStatus.textContent = 'Contrasena incorrecta.';
+          loginStatus.className = 'mt-3 text-sm status-error';
+          loginStatus.classList.remove('hidden');
+        }
+      });
+
+      // Logout handler
+      btnLogout.addEventListener('click', () => {
+        Auth.logout();
+        showLogin();
+      });
+
+      // Validate handler
+      btnValidate.addEventListener('click', () => {
+        const template = templateInput.value.trim();
+        if (!template) {
+          return;
+        }
+
+        const result = Validator.validate(template);
+        displayResults(result);
+      });
+
+      // Load example
+      btnLoadExample.addEventListener('click', () => {
+        templateInput.value = `<!-- Example: Bad template with issues -->
+<style>.sig { color: red; }</style>
+<script>alert('hi');<\/script>
+<div style="display:flex; width:700px;">
+  <img src="{{{bannerUrl}}}">
+  <p>{{nombre}} - {{cargo}}</p>
+  <a href="mailto:{{email}}">{{email}}</a>
+</div>
+<link href="https://fonts.googleapis.com/css2?family=Roboto" rel="stylesheet">`;
+      });
+
+      function showAdmin() {
+        loginSection.classList.add('hidden');
+        adminContent.classList.remove('hidden');
+        btnLogout.classList.remove('hidden');
+      }
+
+      function showLogin() {
+        loginSection.classList.remove('hidden');
+        adminContent.classList.add('hidden');
+        btnLogout.classList.add('hidden');
+        resultsSection.classList.add('hidden');
+      }
+
+      function displayResults(result) {
+        const { errors, warnings } = result;
+        const summary = document.getElementById('results-summary');
+        const errorsDiv = document.getElementById('results-errors');
+        const warningsDiv = document.getElementById('results-warnings');
+        const errorsList = document.getElementById('errors-list');
+        const warningsList = document.getElementById('warnings-list');
+
+        resultsSection.classList.remove('hidden');
+
+        // Summary
+        if (errors.length === 0 && warnings.length === 0) {
+          summary.className = 'mb-4 p-4 rounded-lg bg-green-50 border border-green-200';
+          summary.innerHTML = '<p class="text-green-800 font-medium">La plantilla pasa todas las validaciones.</p>';
+        } else if (errors.length > 0) {
+          summary.className = 'mb-4 p-4 rounded-lg bg-red-50 border border-red-200';
+          summary.innerHTML = `<p class="text-red-800 font-medium">${errors.length} error(es) y ${warnings.length} advertencia(s) encontrados.</p>`;
+        } else {
+          summary.className = 'mb-4 p-4 rounded-lg bg-amber-50 border border-amber-200';
+          summary.innerHTML = `<p class="text-amber-800 font-medium">Sin errores, pero ${warnings.length} advertencia(s) encontradas.</p>`;
+        }
+
+        // Errors
+        if (errors.length > 0) {
+          errorsDiv.classList.remove('hidden');
+          errorsList.innerHTML = errors.map(e =>
+            `<li class="bg-red-50 border border-red-200 rounded p-3">
+              <span class="text-xs font-semibold text-red-600">${e.rule}</span>
+              <p class="text-sm text-red-800 mt-1">${e.message}</p>
+            </li>`
+          ).join('');
+        } else {
+          errorsDiv.classList.add('hidden');
+        }
+
+        // Warnings
+        if (warnings.length > 0) {
+          warningsDiv.classList.remove('hidden');
+          warningsList.innerHTML = warnings.map(w =>
+            `<li class="bg-amber-50 border border-amber-200 rounded p-3">
+              <span class="text-xs font-semibold text-amber-600">${w.rule}</span>
+              <p class="text-sm text-amber-800 mt-1">${w.message}</p>
+            </li>`
+          ).join('');
+        } else {
+          warningsDiv.classList.add('hidden');
+        }
+      }
+    })();
+  </script>
 </body>
 </html>
