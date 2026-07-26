@@ -50,7 +50,7 @@ app.post('/generate-signature', async (req, res) => {
       return res.status(400).json({ success: false, error: validation.error });
     }
 
-    const { nombre, cargo, email, telefono, website, linkedin, templateId, image, compositionParams } = req.body;
+    const { nombre, cargo, email, telefono, website, linkedin, templateId, image, compositionParams, backgroundImage } = req.body;
 
     // Decode base64 image
     const imageBuffer = Buffer.from(image, 'base64');
@@ -59,8 +59,16 @@ app.post('/generate-signature', async (req, res) => {
     // Upload original
     const originalUrl = await upload(originalKey, imageBuffer, 'image/png');
 
+    // Handle custom background if provided
+    let customBackgroundUrl = null;
+    if (backgroundImage) {
+      const bgBuffer = Buffer.from(backgroundImage, 'base64');
+      const bgKey = `backgrounds/${Date.now()}-${nombre.replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase()}-bg.png`;
+      customBackgroundUrl = await upload(bgKey, bgBuffer, 'image/png');
+    }
+
     // Process banner (in local mode, uses the original as fallback)
-    const bannerUrl = await createBanner(originalUrl, nombre, imageBuffer, compositionParams || {});
+    const bannerUrl = await createBanner(originalUrl, nombre, imageBuffer, compositionParams || {}, customBackgroundUrl);
 
     // Render template
     const fields = { nombre, cargo, email, telefono, website, linkedin, bannerUrl };

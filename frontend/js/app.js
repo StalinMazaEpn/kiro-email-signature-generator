@@ -18,6 +18,10 @@
   const formStatus = document.getElementById('form-status');
   const imageInput = document.getElementById('image');
 
+  // Image validation constants
+  const MAX_IMAGE_SIZE = 15 * 1024 * 1024; // 15MB
+  const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
+
   // Store generated HTML for clipboard/download/open
   let generatedHtml = '';
 
@@ -179,8 +183,20 @@
 
     const data = getFormData();
 
+    // Validate profile image
+    const profileFile = imageInput.files[0];
+    if (!profileFile) {
+      showStatus(formStatus, 'Selecciona una imagen de perfil.', 'error');
+      return;
+    }
+    const profileError = validateImageFile(profileFile, 'La foto de perfil');
+    if (profileError) {
+      showStatus(formStatus, profileError, 'error');
+      return;
+    }
+
     // Get image as base64
-    const imageBase64 = await fileToBase64(imageInput.files[0]);
+    const imageBase64 = await fileToBase64(profileFile);
     if (!imageBase64) {
       showStatus(formStatus, 'Selecciona una imagen de perfil.', 'error');
       return;
@@ -188,6 +204,18 @@
 
     data.image = imageBase64;
     data.compositionParams = getCompositionParams();
+
+    // Check for optional custom background image
+    const bgInput = document.getElementById('backgroundImage');
+    if (bgInput && bgInput.files && bgInput.files[0]) {
+      const bgFile = bgInput.files[0];
+      const bgError = validateImageFile(bgFile, 'El fondo personalizado');
+      if (bgError) {
+        showStatus(formStatus, bgError, 'error');
+        return;
+      }
+      data.backgroundImage = await fileToBase64(bgFile);
+    }
 
     setLoading(btnGenerate, true, 'Generando...');
     hideStatus(formStatus);
@@ -272,6 +300,22 @@
   }
 
   // --- Helpers ---
+
+  /**
+   * Validate an image file for allowed type and max size (15MB).
+   * @param {File} file
+   * @param {string} label - Human-readable label for error messages
+   * @returns {string|null} Error message or null if valid
+   */
+  function validateImageFile(file, label) {
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      return `${label}: formato no soportado (${file.type}). Usa PNG, JPG o WebP.`;
+    }
+    if (file.size > MAX_IMAGE_SIZE) {
+      return `${label} es muy pesada (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximo 15MB. Usa una mas liviana.`;
+    }
+    return null;
+  }
 
   /**
    * Wrap signature HTML fragment in a full HTML document for download/open.

@@ -29,6 +29,23 @@ function validateGenerateRequest(body) {
     return { valid: false, error: 'Invalid email format' };
   }
 
+  // Image size validation (base64 length * 0.75 ≈ original bytes)
+  const MAX_IMAGE_BYTES = 15 * 1024 * 1024; // 15MB
+
+  if (body.image) {
+    const imageSizeBytes = Math.ceil(body.image.length * 0.75);
+    if (imageSizeBytes > MAX_IMAGE_BYTES) {
+      return { valid: false, error: 'La foto de perfil es muy pesada (maximo 15MB). Usa una imagen mas liviana.' };
+    }
+  }
+
+  if (body.backgroundImage) {
+    const bgSizeBytes = Math.ceil(body.backgroundImage.length * 0.75);
+    if (bgSizeBytes > MAX_IMAGE_BYTES) {
+      return { valid: false, error: 'El fondo personalizado es muy pesado (maximo 15MB). Usa una imagen mas liviana.' };
+    }
+  }
+
   return { valid: true };
 }
 

@@ -21,7 +21,7 @@ async function handler(event) {
       return response(400, { success: false, error: validation.error });
     }
 
-    const { nombre, cargo, email, telefono, website, linkedin, templateId, image, compositionParams } = body;
+    const { nombre, cargo, email, telefono, website, linkedin, templateId, image, compositionParams, backgroundImage } = body;
 
     // Decode base64 image
     const imageBuffer = Buffer.from(image, 'base64');
@@ -30,8 +30,16 @@ async function handler(event) {
     // Upload original image
     const originalUrl = await upload(originalKey, imageBuffer, 'image/png');
 
+    // Handle custom background if provided
+    let customBackgroundUrl = null;
+    if (backgroundImage) {
+      const bgBuffer = Buffer.from(backgroundImage, 'base64');
+      const bgKey = `backgrounds/${Date.now()}-${nombre.replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase()}-bg.png`;
+      customBackgroundUrl = await upload(bgKey, bgBuffer, 'image/png');
+    }
+
     // Process banner via image-tools (or local mock)
-    const bannerUrl = await createBanner(originalUrl, nombre, imageBuffer, compositionParams || {});
+    const bannerUrl = await createBanner(originalUrl, nombre, imageBuffer, compositionParams || {}, customBackgroundUrl);
 
     // Render template with all fields
     const fields = { nombre, cargo, email, telefono, website, linkedin, bannerUrl };

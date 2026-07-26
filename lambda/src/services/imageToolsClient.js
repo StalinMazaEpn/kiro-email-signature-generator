@@ -12,15 +12,16 @@ const { upload, getBannerKey } = require('./storageService');
  * @param {string} nombre - User's name (for generating banner key)
  * @param {Buffer|null} originalImageBuffer - Original image buffer (used in local mode fallback)
  * @param {object} compositionParams - Image composition parameters (scalePercent, horizontalAlign, verticalAlign, paddingPercent, offsetX, offsetY)
+ * @param {string|null} customBackgroundUrl - Optional custom background image URL (overrides BACKGROUND_TEMPLATE_URL)
  * @returns {Promise<string>} Public URL of the processed banner
  */
-async function createBanner(sourceImageUrl, nombre, originalImageBuffer = null, compositionParams = {}) {
+async function createBanner(sourceImageUrl, nombre, originalImageBuffer = null, compositionParams = {}, customBackgroundUrl = null) {
   if (isLocalMode()) {
     const config = getConfig();
     // If IMAGE_TOOLS_URL is configured, try the real service even in local mode
-    if (config.imageToolsUrl && config.backgroundTemplateUrl) {
+    if (config.imageToolsUrl && (config.backgroundTemplateUrl || customBackgroundUrl)) {
       try {
-        return await createBannerRemote(sourceImageUrl, nombre, compositionParams);
+        return await createBannerRemote(sourceImageUrl, nombre, compositionParams, customBackgroundUrl);
       } catch (err) {
         console.warn('[imageToolsClient] Remote service failed, falling back to local copy:', err.message);
         return createBannerLocal(sourceImageUrl, nombre, originalImageBuffer);
@@ -28,7 +29,7 @@ async function createBanner(sourceImageUrl, nombre, originalImageBuffer = null, 
     }
     return createBannerLocal(sourceImageUrl, nombre, originalImageBuffer);
   }
-  return createBannerRemote(sourceImageUrl, nombre, compositionParams);
+  return createBannerRemote(sourceImageUrl, nombre, compositionParams, customBackgroundUrl);
 }
 
 /**
@@ -50,21 +51,21 @@ async function createBannerLocal(sourceImageUrl, nombre, originalImageBuffer) {
  * POST to image-tools with imageUrl + backgroundUrl, get download_url back,
  * download the result, upload to S3.
  */
-async function createBannerRemote(sourceImageUrl, nombre, compositionParams = {}) {
+async function createBannerRemote(sourceImageUrl, nombre, compositionParams = {}, customBackgroundUrl = null) {
   const config = getConfig();
 
   if (!config.imageToolsUrl) {
     throw new Error('IMAGE_TOOLS_URL environment variable is not configured. Set APP_MODE=local to use mock mode.');
   }
 
-  if (!config.backgroundTemplateUrl) {
-    throw new Error('BACKGROUND_TEMPLATE_URL environment variable is not configured.');
+  if (!config.backgroundTemplateUrl && !customBackgroundUrl) {
+    throw new Error('No background configured. Set BACKGROUND_TEMPLATE_URL or provide a custom background image.');
   }
-  console.log('createBannerRemote', sourceImageUrl, nombre)
+
   // Step 1: Call image-tools API
   const requestBody = {
     imageUrl: sourceImageUrl,
-    backgroundUrl: config.backgroundTemplateUrl,
+    backgroundUrl: customBackgroundUrl || config.backgroundTemplateUrl,
     outputFilename: `${nombre.replace(/[^a-zA-Z0-9_-]/g, '_')}-banner.png`,
     horizontalAlign: compositionParams.horizontalAlign || 'center',
     verticalAlign: compositionParams.verticalAlign || 'center',
