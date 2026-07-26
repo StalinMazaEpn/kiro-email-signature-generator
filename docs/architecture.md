@@ -76,9 +76,10 @@ graph TD
 |------------|------------------------|---------------------------|
 | Server | Express en localhost:3000 | Lambda + API Gateway |
 | Storage | Filesystem `lambda/local-storage/` | S3 bucket público |
-| Image-tools | Skip (copia original como banner) | Llama API externa real |
-| AI | Mock regex / Azure OpenAI real | Bedrock / Azure OpenAI |
+| Image-tools | Intenta servicio real si `IMAGE_TOOLS_URL` configurado; fallback copia original | Llama API externa real |
+| AI | Azure OpenAI real (si hay credenciales) / Mock regex | Bedrock / Azure OpenAI |
 | Frontend | Servido por Express | S3 Static Website |
+| Preview | Usa data URL de imagen seleccionada (cliente) | Usa data URL de imagen seleccionada (cliente) |
 
 ## Patrón Provider (IA)
 

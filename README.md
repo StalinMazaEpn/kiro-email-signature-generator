@@ -51,24 +51,32 @@ curl -X POST http://localhost:3000/extract-fields \
 cd lambda && npm test
 ```
 
-57 tests unitarios cubriendo config, validación, template engine, storage y AI provider.
+70 tests unitarios cubriendo config, validación, template engine, storage, AI provider y Lambda handlers.
 
 ## Estructura del proyecto
 
 ```
 /
-├── frontend/          # UI estática (Vanilla JS + Tailwind CDN)
-├── lambda/            # Backend Node.js (Lambda handlers + dev server)
+├── frontend/              # UI estática (Vanilla JS + Tailwind CDN)
+│   ├── index.html         # Página principal (formulario + preview + AI)
+│   ├── admin.html         # Panel admin (pendiente: validador de templates)
+│   ├── css/styles.css     # Estilos custom (spinner, status, iframes)
+│   └── js/
+│       ├── api.js         # Cliente fetch para todos los endpoints
+│       ├── app.js         # Lógica principal: form, AI extract, generate, copy
+│       └── preview.js     # Renderizado en iframe con auto-height
+├── lambda/                # Backend Node.js (Lambda handlers + dev server)
 │   ├── src/
-│   │   ├── handlers/  # Lambda handlers (en progreso)
-│   │   ├── services/  # Template engine, storage, image-tools
-│   │   ├── providers/ # AI providers (Azure OpenAI, Bedrock)
-│   │   └── utils/     # Config, validation
-│   ├── tests/         # Jest unit tests
-│   └── dev-server.js  # Servidor Express para desarrollo local
-├── templates/         # Plantillas Mustache (3 variantes)
-├── docs/              # Documentación extendida
-└── .kiro/specs/       # Spec del proyecto (requirements, design, tasks)
+│   │   ├── handlers/      # Lambda handlers (generateSignature, preview, extract)
+│   │   ├── services/      # Template engine, storage, image-tools client
+│   │   ├── providers/     # AI providers (Azure OpenAI, Bedrock)
+│   │   └── utils/         # Config, validation
+│   ├── tests/unit/        # Jest unit tests (70 tests)
+│   ├── local-storage/     # Imágenes generadas en dev (gitignored)
+│   └── dev-server.js      # Servidor Express para desarrollo local
+├── templates/             # Plantillas Mustache (3 variantes)
+├── docs/                  # Documentación extendida
+└── .kiro/specs/           # Spec del proyecto (requirements, design, tasks)
 ```
 
 ## Tecnologías
@@ -89,4 +97,30 @@ Ver `docs/` para:
 
 ## Estado del proyecto
 
-Ver `.kiro/specs/email-signature-generator/tasks.md` para el progreso completo.
+| Fase | Estado |
+|------|--------|
+| 1. Estructura y utilidades | ✅ Completo |
+| 2. Templates y engine | ✅ Completo |
+| 3. Storage e image-tools | ✅ Completo |
+| 4. AI provider abstraction | ✅ Completo |
+| 5. Lambda handlers | ✅ Completo |
+| 6. Checkpoint (70 tests) | ✅ Completo |
+| 7. Frontend | ✅ Completo |
+| 8. Admin panel | ⬜ Pendiente |
+| 9. Checkpoint frontend | ⬜ Pendiente |
+| 10. Infra y docs finales | ⬜ Pendiente |
+
+**Funcionalidades operativas ahora:**
+- Formulario con todos los campos + selector de plantilla + subida de imagen
+- Extracción de campos con IA (Azure OpenAI) que pre-llena el formulario
+- Vista previa instantánea (muestra la imagen seleccionada sin esperar procesamiento)
+- Generación completa de firma con procesamiento de banner via image-tools
+- Copiar HTML al clipboard
+- 3 plantillas: Corporativa, Moderna con Banner, Minimalista
+
+**Pendiente:**
+- Panel admin con validador de templates
+- SAM template (infraestructura AWS)
+- Documentación final con diagrama y demo script
+
+Ver `.kiro/specs/email-signature-generator/tasks.md` para el progreso detallado.

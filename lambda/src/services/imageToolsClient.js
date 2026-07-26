@@ -5,8 +5,8 @@ const { upload, getBannerKey } = require('./storageService');
 
 /**
  * Call the image-tools external API to process a photo into a banner.
- * In local mode: skips processing and returns the original image URL as the "banner"
- * (simulates a successful processing without needing the external service).
+ * In local mode: tries the real image-tools service if configured, otherwise
+ * falls back to copying the original image as the "banner".
  *
  * @param {string} sourceImageUrl - Public URL of the uploaded original image
  * @param {string} nombre - User's name (for generating banner key)
@@ -15,6 +15,16 @@ const { upload, getBannerKey } = require('./storageService');
  */
 async function createBanner(sourceImageUrl, nombre, originalImageBuffer = null) {
   if (isLocalMode()) {
+    const config = getConfig();
+    // If IMAGE_TOOLS_URL is configured, try the real service even in local mode
+    if (config.imageToolsUrl && config.backgroundTemplateUrl) {
+      try {
+        return await createBannerRemote(sourceImageUrl, nombre);
+      } catch (err) {
+        console.warn('[imageToolsClient] Remote service failed, falling back to local copy:', err.message);
+        return createBannerLocal(sourceImageUrl, nombre, originalImageBuffer);
+      }
+    }
     return createBannerLocal(sourceImageUrl, nombre, originalImageBuffer);
   }
   return createBannerRemote(sourceImageUrl, nombre);
@@ -49,7 +59,7 @@ async function createBannerRemote(sourceImageUrl, nombre) {
   if (!config.backgroundTemplateUrl) {
     throw new Error('BACKGROUND_TEMPLATE_URL environment variable is not configured.');
   }
-
+  console.log('createBannerRemote', sourceImageUrl, nombre)
   // Step 1: Call image-tools API
   const requestBody = {
     imageUrl: sourceImageUrl,

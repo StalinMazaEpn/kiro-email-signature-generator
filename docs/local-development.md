@@ -36,12 +36,13 @@ Esto levanta un servidor Express en `http://localhost:3000` que:
 
 | Feature | Funciona local | Notas |
 |---------|---------------|-------|
-| Preview de firma | ✅ | Todas las plantillas, preview instantáneo |
+| Frontend completo | ✅ | Formulario, preview, generación, copia HTML |
+| Preview de firma | ✅ | Muestra la imagen seleccionada como data URL |
 | Generación completa | ✅ | Imagen se guarda en `lambda/local-storage/` |
 | Listar plantillas | ✅ | |
-| Extracción IA (mock) | ✅ | Usa regex básico, no IA real |
+| Extracción IA (mock) | ✅ | Usa regex básico si no hay credenciales |
 | Extracción IA (real) | ⚠️ Necesita credenciales | Configurar Azure OpenAI en .env |
-| Image-tools (real) | ⚠️ Necesita servicio externo | En local se salta, usa original como banner |
+| Image-tools (real) | ⚠️ Necesita servicio externo | Si `IMAGE_TOOLS_URL` está configurado, intenta usarlo; si falla, usa original como banner |
 
 ## Usar IA real en local
 
@@ -74,7 +75,7 @@ Esta carpeta está en `.gitignore`. El dev server las sirve en `/storage/...`.
 
 ```bash
 cd lambda
-npm test            # Correr todos los tests (57 tests)
+npm test            # Correr todos los tests (70 tests)
 npm run test:watch  # Modo watch para desarrollo
 ```
 
@@ -84,6 +85,8 @@ Los tests cubren:
 - **templateEngine.test.js** — Renderizado, variables, compatibilidad email
 - **storageService.test.js** — Upload local, generación de keys
 - **aiProvider.test.js** — Factory de providers
+- **handlers.test.js** — Estructura de respuestas exitosas y errores de todos los handlers
+- **previewSignature.test.js** — Preview usa placeholder banner sin procesamiento de imagen
 
 ## Variables de entorno
 
@@ -139,6 +142,6 @@ curl -X POST http://localhost:3000/extract-fields \
   -d '{"text":"Jonathan Arana, jonathan@contoso.com, Tech Lead"}'
 ```
 
-## Siguiente paso: Frontend
+## Siguiente paso: Admin Panel
 
-Los archivos `frontend/index.html` y `frontend/admin.html` están creados como placeholder. Cuando se implementen (Tasks 7-8), se servirán automáticamente por el dev server en `http://localhost:3000/`.
+El frontend principal está completamente funcional en `http://localhost:3000/`. El admin panel (`admin.html`) implementará el validador de templates (Task 8).

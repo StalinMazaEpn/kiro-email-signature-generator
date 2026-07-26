@@ -85,7 +85,18 @@
         return;
       }
 
-      Preview.showPreview(result.html);
+      let html = result.html;
+
+      // If user has selected an image, replace placeholder with data URL for immediate preview
+      if (imageInput.files && imageInput.files[0]) {
+        const dataUrl = await fileToDataUrl(imageInput.files[0]);
+        if (dataUrl) {
+          // Replace the placeholder banner URL with the actual image data URL
+          html = html.replace(/https:\/\/via\.placeholder\.com[^"']*/g, dataUrl);
+        }
+      }
+
+      Preview.showPreview(html);
     } catch (err) {
       showStatus(formStatus, `Error de conexion: ${err.message}`, 'error');
     } finally {
@@ -192,6 +203,22 @@
         const base64 = reader.result.split(',')[1];
         resolve(base64);
       };
+      reader.onerror = () => reject(new Error('Error reading file'));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  /**
+   * Convert a File to a full data URL (with the data:image/...;base64, prefix).
+   * Used for preview rendering so images display immediately in the browser.
+   * @param {File} file
+   * @returns {Promise<string|null>}
+   */
+  function fileToDataUrl(file) {
+    if (!file) return Promise.resolve(null);
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
       reader.onerror = () => reject(new Error('Error reading file'));
       reader.readAsDataURL(file);
     });
