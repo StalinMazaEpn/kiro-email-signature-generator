@@ -85,4 +85,23 @@ const FieldConfig = {
       return !value || (typeof value === 'string' && value.trim() === '');
     });
   },
+
+  /**
+   * Image dimensions required by each template.
+   * Used by the cropper to enforce correct aspect ratios.
+   */
+  templateImageConfig: {
+    'corporativa': { width: 130, height: 130, aspectRatio: 1, label: 'Cuadrado (130×130px)' },
+    'moderna-banner': { width: 200, height: 260, aspectRatio: 200/260, label: 'Portrait (200×260px)' },
+    'minimalista': { width: 56, height: 56, aspectRatio: 1, label: 'Cuadrado (56×56px)' },
+  },
+
+  /**
+   * Get the image config for the currently selected template.
+   * @param {string} templateId
+   * @returns {{ width: number, height: number, aspectRatio: number, label: string }}
+   */
+  getTemplateImageConfig(templateId) {
+    return this.templateImageConfig[templateId] || this.templateImageConfig['corporativa'];
+  },
 };

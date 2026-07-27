@@ -219,7 +219,7 @@
     data.image = imageBase64;
     data.compositionParams = getCompositionParams();
 
-    // Check for optional custom background image
+    // Check for optional custom background image — open cropper for correct dimensions
     const bgInput = document.getElementById('backgroundImage');
     if (bgInput && bgInput.files && bgInput.files[0]) {
       const bgFile = bgInput.files[0];
@@ -228,7 +228,19 @@
         showStatus(formStatus, bgError, 'error');
         return;
       }
-      data.backgroundImage = await fileToBase64(bgFile);
+      
+      // Open cropper modal for the user to crop to correct template dimensions
+      const bgDataUrl = await fileToDataUrl(bgFile);
+      const croppedBase64 = await CropperHandler.open(bgDataUrl, data.templateId);
+      
+      if (!croppedBase64) {
+        // User cancelled the crop
+        showStatus(formStatus, 'Recorte cancelado. Usa el botón Generar nuevamente.', 'warning');
+        setLoading(btnGenerate, false, 'Generar firma');
+        return;
+      }
+      
+      data.backgroundImage = croppedBase64;
     }
 
     setLoading(btnGenerate, true, 'Generando...');

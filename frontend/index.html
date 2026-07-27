@@ -24,6 +24,7 @@
       }
     }
   </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body class="bg-white min-h-screen" style="background: linear-gradient(180deg, #fafdfb 0%, #ffffff 100%);">
@@ -320,8 +321,34 @@
     </div>
   </main>
 
+  <!-- Cropper Modal -->
+  <div id="cropper-modal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black bg-opacity-60" id="cropper-backdrop"></div>
+    <div class="absolute inset-4 md:inset-12 bg-white rounded-2xl shadow-xl flex flex-col overflow-hidden">
+      <div class="p-4 border-b flex items-center justify-between" style="border-color: var(--tea-green);">
+        <div>
+          <h3 class="text-lg font-semibold" style="color: var(--jet-black);">Recortar imagen de fondo</h3>
+          <p id="cropper-hint" class="text-xs text-gray-500 mt-1">Ajusta el área de recorte a las proporciones requeridas por la plantilla.</p>
+        </div>
+        <button id="cropper-cancel" type="button" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+      </div>
+      <div class="flex-1 p-4 bg-gray-900 flex items-center justify-center overflow-hidden">
+        <img id="cropper-image" class="max-w-full max-h-full" style="display: block;">
+      </div>
+      <div class="p-4 border-t flex items-center justify-between" style="border-color: var(--tea-green);">
+        <p class="text-xs text-gray-500" id="cropper-dimensions">Dimensiones recomendadas: --</p>
+        <div class="flex gap-3">
+          <button id="cropper-cancel-btn" type="button" class="btn-outlined-cerulean py-2 px-4 rounded-xl text-sm font-medium">Cancelar</button>
+          <button id="cropper-confirm" type="button" class="btn-gradient py-2 px-4 rounded-xl text-sm font-medium">Aplicar recorte</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Scripts -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
   <script src="js/fieldConfig.js"></script>
+  <script src="js/cropper-handler.js"></script>
   <script src="js/api.js"></script>
   <script src="js/preview.js"></script>
   <script src="js/app.js"></script>
