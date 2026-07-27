@@ -1,0 +1,180 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Email Signature Generator - Serverless application with Lambda, API Gateway, and S3
+
+Globals:
+  Function:
+    Runtime: nodejs20.x
+    Timeout: 30
+    MemorySize: 256
+    Environment:
+      Variables:
+        S3_BUCKET_NAME: !Ref AssetsBucket
+        IMAGE_TOOLS_URL: !Ref ImageToolsUrl
+        IMAGE_TOOLS_API_KEY: !Ref ImageToolsApiKey
+        BACKGROUND_TEMPLATE_URL: !Ref BackgroundTemplateUrl
+        AI_PROVIDER: !Ref AIProvider
+        AZURE_OPENAI_ENDPOINT: !Ref AzureOpenAIEndpoint
+        AZURE_OPENAI_KEY: !Ref AzureOpenAIKey
+        AZURE_OPENAI_DEPLOYMENT: !Ref AzureOpenAIDeployment
+        ADMIN_PASSWORD_HASH: !Ref AdminPasswordHash
+        APP_MODE: aws
+
+Parameters:
+  ImageToolsUrl:
+    Type: String
+    Description: URL of the external image-tools processing service
+  ImageToolsApiKey:
+    Type: String
+    Description: API key for the image-tools service
+    Default: ''
+    NoEcho: true
+  BackgroundTemplateUrl:
+    Type: String
+    Description: URL of the background template image for banner composition
+    Default: ''
+  AIProvider:
+    Type: String
+    Description: AI provider to use for field extraction (azure or bedrock)
+    Default: bedrock
+    AllowedValues:
+      - azure
+      - bedrock
+  AzureOpenAIEndpoint:
+    Type: String
+    Description: Azure OpenAI endpoint URL
+    Default: ''
+  AzureOpenAIKey:
+    Type: String
+    Description: Azure OpenAI API key
+    Default: ''
+    NoEcho: true
+  AzureOpenAIDeployment:
+    Type: String
+    Description: Azure OpenAI deployment name
+    Default: ''
+  AdminPasswordHash:
+    Type: String
+    Description: SHA-256 hash of the admin panel password
+    Default: ''
+    NoEcho: true
+
+Resources:
+  # API Gateway
+  SignatureApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: $default
+      CorsConfiguration:
+        AllowOrigins:
+          - "*"
+        AllowMethods:
+          - POST
+          - OPTIONS
+        AllowHeaders:
+          - Content-Type
+
+  # Lambda Functions
+  GenerateSignatureFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/generateSignature.handler
+      CodeUri: lambda/
+      Timeout: 60
+      MemorySize: 512
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref AssetsBucket
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref SignatureApi
+            Path: /generate-signature
+            Method: POST
+
+  PreviewSignatureFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/previewSignature.handler
+      CodeUri: lambda/
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref SignatureApi
+            Path: /preview-signature
+            Method: POST
+
+  ExtractFieldsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/extractFields.handler
+      CodeUri: lambda/
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - bedrock:InvokeModel
+              Resource: "*"
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref SignatureApi
+            Path: /extract-fields
+            Method: POST
+
+  # S3 Buckets
+  AssetsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+
+  AssetsBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref AssetsBucket
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal: "*"
+            Action: s3:GetObject
+            Resource: !Sub "${AssetsBucket.Arn}/*"
+
+  FrontendBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      WebsiteConfiguration:
+        IndexDocument: index.html
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+
+  FrontendBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref FrontendBucket
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal: "*"
+            Action: s3:GetObject
+            Resource: !Sub "${FrontendBucket.Arn}/*"
+
+Outputs:
+  ApiUrl:
+    Description: API Gateway endpoint URL
+    Value: !Sub "https://${SignatureApi}.execute-api.${AWS::Region}.amazonaws.com"
+  FrontendUrl:
+    Description: Frontend S3 website URL
+    Value: !GetAtt FrontendBucket.WebsiteURL
+  AssetsBucketName:
+    Description: Name of the S3 bucket for signature assets (originals and banners)
+    Value: !Ref AssetsBucket

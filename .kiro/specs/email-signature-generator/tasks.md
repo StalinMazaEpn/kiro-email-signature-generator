@@ -194,8 +194,8 @@ Implement a serverless email signature generator as a monorepo with Vanilla JS f
     - imageToolsClient sends params to image-tools API request body
     - Dev server also passes compositionParams through
 
-- [ ] 10. Infrastructure and documentation
-  - [ ] 10.1 Create SAM template.yaml
+- [x] 10. Infrastructure and documentation
+  - [x] 10.1 Create SAM template.yaml
     - Define all Lambda functions (generateSignature, previewSignature, extractFields) with Node.js 20.x runtime
     - Define HttpApi with CORS AllowOrigins *, POST methods
     - Define AssetsBucket with public access policy and FrontendBucket with static website hosting
@@ -203,13 +203,13 @@ Implement a serverless email signature generator as a monorepo with Vanilla JS f
     - Define Outputs for ApiUrl, FrontendUrl, AssetsBucketName
     - _Requirements: 10.1, 10.3, 10.4_
 
-  - [ ] 10.2 Create README with architecture diagram and demo script
+  - [x] 10.2 Create README with architecture diagram and demo script
     - Write README.md with Mermaid diagram showing Frontend → API Gateway → Lambda → S3/image-tools/AI flow
     - Include setup instructions, environment variable reference, and deployment steps
     - Include 3-minute video demo script covering manual flow, AI flow, preview, and admin validation
     - _Requirements: 11.1, 11.2_
 
-- [ ] 11. Final checkpoint - Ensure all tests pass and project is complete
+- [x] 11. Final checkpoint - Ensure all tests pass and project is complete
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Notes
