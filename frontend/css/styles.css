@@ -1,5 +1,12 @@
-/* Custom styles for Email Signature Generator */
-/* Tailwind CDN handles most styling; this file is for overrides and transitions */
+/* Custom styles for Email Signature Generator — Redesign */
+
+:root {
+  --jet-black: #1f363d;
+  --cerulean: #40798c;
+  --tropical-teal: #70a9a1;
+  --muted-teal: #9ec1a3;
+  --tea-green: #cfe0c3;
+}
 
 /* Loading spinner */
 .spinner {
@@ -67,6 +74,87 @@ section {
   transition: box-shadow 0.2s ease;
 }
 
-section:hover {
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+/* Gradient buttons */
+.btn-gradient {
+  background: linear-gradient(135deg, var(--cerulean), var(--tropical-teal));
+  color: white;
+  border: none;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(64, 121, 140, 0.3);
+}
+.btn-gradient:hover {
+  box-shadow: 0 4px 12px rgba(64, 121, 140, 0.4);
+  transform: translateY(-1px);
+}
+.btn-gradient:disabled {
+  transform: none;
+  box-shadow: 0 2px 8px rgba(64, 121, 140, 0.2);
+}
+
+/* Outlined button styles */
+.btn-outlined-cerulean {
+  border: 1.5px solid var(--cerulean);
+  color: var(--cerulean);
+  background: transparent;
+  transition: all 0.2s ease;
+}
+.btn-outlined-cerulean:hover {
+  background: rgba(64, 121, 140, 0.08);
+}
+
+.btn-outlined-jet {
+  border: 1.5px solid var(--jet-black);
+  color: var(--jet-black);
+  background: transparent;
+  transition: all 0.2s ease;
+}
+.btn-outlined-jet:hover {
+  background: rgba(31, 54, 61, 0.06);
+}
+
+/* Dropzone */
+.dropzone {
+  border: 2px dashed var(--muted-teal);
+  border-radius: 16px;
+  padding: 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: rgba(207, 224, 195, 0.05);
+}
+.dropzone:hover, .dropzone.drag-over {
+  border-color: var(--cerulean);
+  background: rgba(207, 224, 195, 0.15);
+}
+.dropzone.has-file {
+  border-style: solid;
+  border-color: var(--tropical-teal);
+  background: rgba(207, 224, 195, 0.1);
+}
+
+/* Composition radio cards */
+.composition-card {
+  border: 2px solid rgba(158, 193, 163, 0.4);
+  border-radius: 12px;
+  padding: 0.75rem;
+  text-align: center;
+  transition: all 0.2s ease;
+  background: white;
+  cursor: pointer;
+}
+.composition-card:hover {
+  border-color: var(--muted-teal);
+}
+.composition-card.active {
+  border-color: var(--cerulean);
+  border-width: 2px;
+  background: rgba(207, 224, 195, 0.2);
+  box-shadow: 0 2px 8px rgba(64, 121, 140, 0.15);
+}
+
+/* Focus ring override for custom palette */
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--cerulean) !important;
+  box-shadow: 0 0 0 2px rgba(64, 121, 140, 0.2);
 }

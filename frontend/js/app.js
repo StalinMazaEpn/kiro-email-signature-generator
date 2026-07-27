@@ -246,7 +246,7 @@
 
     try {
       await navigator.clipboard.writeText(generatedHtml);
-      flashButton(btnCopy, 'Copiado!', 'bg-green-600', 'bg-green-800');
+      flashButton(btnCopy, 'Copiado!', 'bg-cerulean', 'bg-cerulean');
     } catch (err) {
       // Fallback for older browsers
       const textarea = document.createElement('textarea');
@@ -257,7 +257,7 @@
       textarea.select();
       document.execCommand('copy');
       document.body.removeChild(textarea);
-      flashButton(btnCopy, 'Copiado!', 'bg-green-600', 'bg-green-800');
+      flashButton(btnCopy, 'Copiado!', 'bg-cerulean', 'bg-cerulean');
     }
   }
 
@@ -279,7 +279,7 @@
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    flashButton(btnDownload, 'Descargado!', 'bg-indigo-600', 'bg-indigo-800');
+    flashButton(btnDownload, 'Descargado!', 'btn-outlined-cerulean', 'btn-outlined-cerulean');
   }
 
   // --- Open in New Window ---
@@ -426,10 +426,93 @@ ${html}
   function flashButton(btn, tempText, originalClass, flashClass) {
     const originalText = btn.textContent;
     btn.textContent = tempText;
-    btn.classList.replace(originalClass, flashClass);
     setTimeout(() => {
       btn.textContent = originalText;
-      btn.classList.replace(flashClass, originalClass);
     }, 2000);
+  }
+
+  // --- Dropzone Logic ---
+  function initDropzone(dropzoneId, inputId, previewId) {
+    const dropzone = document.getElementById(dropzoneId);
+    const input = document.getElementById(inputId);
+    const preview = document.getElementById(previewId);
+    if (!dropzone || !input) return;
+
+    // Click to select
+    dropzone.addEventListener('click', (e) => {
+      if (e.target === input) return;
+      input.click();
+    });
+
+    // Drag events
+    ['dragenter', 'dragover'].forEach(evt => {
+      dropzone.addEventListener(evt, (e) => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+    });
+    ['dragleave', 'drop'].forEach(evt => {
+      dropzone.addEventListener(evt, (e) => { e.preventDefault(); dropzone.classList.remove('drag-over'); });
+    });
+
+    dropzone.addEventListener('drop', (e) => {
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        input.files = files;
+        input.dispatchEvent(new Event('change'));
+      }
+    });
+
+    // Show preview on file select
+    input.addEventListener('change', () => {
+      if (input.files && input.files[0]) {
+        const file = input.files[0];
+        dropzone.classList.add('has-file');
+        if (preview) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            preview.innerHTML = `<img src="${e.target.result}" class="max-h-20 rounded-lg mx-auto mt-2" alt="Preview"><p class="text-xs text-gray-500 mt-1">${file.name}</p>`;
+            preview.classList.remove('hidden');
+          };
+          reader.readAsDataURL(file);
+        }
+      } else {
+        dropzone.classList.remove('has-file');
+        if (preview) { preview.classList.add('hidden'); preview.innerHTML = ''; }
+      }
+    });
+  }
+
+  initDropzone('dropzone-image', 'image', 'dropzone-image-preview');
+  initDropzone('dropzone-background', 'backgroundImage', 'dropzone-bg-preview');
+
+  // --- Rich Copy for Outlook (copies as text/html to clipboard) ---
+  const btnCopyRich = document.getElementById('btn-copy-rich');
+  if (btnCopyRich) {
+    btnCopyRich.addEventListener('click', async () => {
+      if (!generatedHtml) return;
+      try {
+        const blob = new Blob([generatedHtml], { type: 'text/html' });
+        await navigator.clipboard.write([new ClipboardItem({ 'text/html': blob })]);
+        flashButton(btnCopyRich, '¡Copiado!', 'bg-cerulean', 'bg-jet');
+      } catch (err) {
+        // Fallback: copy as plain HTML text
+        await navigator.clipboard.writeText(generatedHtml);
+        flashButton(btnCopyRich, '¡Copiado como texto!', 'bg-cerulean', 'bg-jet');
+      }
+    });
+  }
+
+  const btnCopyGmail = document.getElementById('btn-copy-gmail');
+  if (btnCopyGmail) {
+    btnCopyGmail.addEventListener('click', async () => {
+      if (!generatedHtml) return;
+      try {
+        const blob = new Blob([generatedHtml], { type: 'text/html' });
+        const textBlob = new Blob([generatedHtml], { type: 'text/plain' });
+        await navigator.clipboard.write([new ClipboardItem({ 'text/html': blob, 'text/plain': textBlob })]);
+        flashButton(btnCopyGmail, '¡Copiado!', 'bg-cerulean', 'bg-jet');
+      } catch (err) {
+        await navigator.clipboard.writeText(generatedHtml);
+        flashButton(btnCopyGmail, '¡Copiado como texto!', 'bg-cerulean', 'bg-jet');
+      }
+    });
   }
 })();

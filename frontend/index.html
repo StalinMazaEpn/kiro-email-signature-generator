@@ -5,154 +5,192 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Email Signature Generator</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            jet: '#1f363d',
+            cerulean: '#40798c',
+            'tropical-teal': '#70a9a1',
+            'muted-teal': '#9ec1a3',
+            'tea-green': '#cfe0c3',
+          },
+          borderRadius: {
+            'xl': '12px',
+            '2xl': '16px',
+          }
+        }
+      }
+    }
+  </script>
   <link rel="stylesheet" href="css/styles.css">
 </head>
-<body class="bg-gray-50 min-h-screen">
+<body class="bg-white min-h-screen" style="background: linear-gradient(180deg, #fafdfb 0%, #ffffff 100%);">
+
   <!-- Header -->
-  <header class="bg-white shadow-sm border-b border-gray-200">
-    <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-      <h1 class="text-2xl font-bold text-gray-800">Email Signature Generator</h1>
-      <a href="admin.html" class="text-sm text-gray-500 hover:text-gray-700">Admin</a>
+  <header class="bg-white border-b-2" style="border-color: var(--tea-green);">
+    <div class="max-w-7xl mx-auto px-4 py-5 flex items-center justify-between">
+      <h1 class="text-2xl font-bold" style="color: var(--jet-black);">Email Signature Generator</h1>
+      <a href="admin.html" class="text-sm text-gray-500 hover:text-cerulean transition-colors">Admin</a>
     </div>
   </header>
 
   <main class="max-w-7xl mx-auto px-4 py-8">
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
-      <!-- Left Column: Form + AI -->
+      <!-- Left Column: Form + AI (scrollable) -->
       <div class="space-y-6">
 
-        <!-- AI Extraction Section -->
-        <section class="bg-white rounded-lg shadow p-6">
-          <h2 class="text-lg font-semibold text-gray-700 mb-3">Extraer campos con IA</h2>
-          <p class="text-sm text-gray-500 mb-3">Pega un texto con datos de contacto y la IA extraera los campos automaticamente.</p>
+        <!-- Section A: AI Extraction -->
+        <section class="bg-white rounded-2xl shadow-sm p-6 border-l-4" style="border-left-color: var(--cerulean); background: linear-gradient(135deg, rgba(207,224,195,0.06) 0%, white 100%);">
+          <h2 class="text-lg font-semibold mb-2" style="color: var(--jet-black);">Extraer campos con IA</h2>
+          <p class="text-sm text-gray-500 mb-3">Pega un texto con datos de contacto y la IA extraerá los campos automáticamente.</p>
           <textarea
             id="ai-text"
             rows="4"
-            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            class="w-full border rounded-xl px-4 py-3 text-sm transition-colors"
+            style="border-color: rgba(158,193,163,0.3);"
             placeholder="Ej: Jonathan Arana, Tech Lead, jonathan@contoso.com, +593996666193, https://jonathan.dev"
           ></textarea>
           <button
             id="btn-extract"
             type="button"
-            class="mt-3 w-full bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 transition-colors text-sm font-medium"
+            class="btn-gradient mt-3 w-full py-2.5 px-4 rounded-xl text-sm font-medium"
           >
             Extraer campos con IA
           </button>
           <div id="ai-status" class="mt-2 text-sm hidden"></div>
         </section>
 
-        <!-- Manual Form -->
-        <section class="bg-white rounded-lg shadow p-6">
-          <h2 class="text-lg font-semibold text-gray-700 mb-4">Datos de contacto</h2>
+        <!-- Section B: Contact Form -->
+        <section class="bg-white rounded-2xl shadow-sm p-6">
+          <h2 class="text-lg font-semibold mb-4" style="color: var(--jet-black);">Datos de contacto</h2>
           <form id="signature-form" class="space-y-4">
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label for="nombre" class="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+                <label for="nombre" class="block text-sm font-medium mb-1" style="color: var(--jet-black);">Nombre *</label>
                 <input type="text" id="nombre" name="nombre" required
-                  class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                  class="w-full border rounded-xl px-3 py-2 text-sm" style="border-color: rgba(158,193,163,0.3);">
               </div>
               <div>
-                <label for="cargo" class="block text-sm font-medium text-gray-700 mb-1">Cargo *</label>
+                <label for="cargo" class="block text-sm font-medium mb-1" style="color: var(--jet-black);">Cargo *</label>
                 <input type="text" id="cargo" name="cargo" required
-                  class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                  class="w-full border rounded-xl px-3 py-2 text-sm" style="border-color: rgba(158,193,163,0.3);">
               </div>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                <label for="email" class="block text-sm font-medium mb-1" style="color: var(--jet-black);">Email *</label>
                 <input type="email" id="email" name="email" required
-                  class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                  class="w-full border rounded-xl px-3 py-2 text-sm" style="border-color: rgba(158,193,163,0.3);">
               </div>
               <div>
-                <label for="telefono" class="block text-sm font-medium text-gray-700 mb-1">Telefono *</label>
+                <label for="telefono" class="block text-sm font-medium mb-1" style="color: var(--jet-black);">Teléfono *</label>
                 <input type="tel" id="telefono" name="telefono" required
-                  class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                  class="w-full border rounded-xl px-3 py-2 text-sm" style="border-color: rgba(158,193,163,0.3);">
               </div>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label for="website" class="block text-sm font-medium text-gray-700 mb-1">Website</label>
+                <label for="website" class="block text-sm font-medium mb-1" style="color: var(--jet-black);">Website</label>
                 <input type="url" id="website" name="website"
-                  class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  class="w-full border rounded-xl px-3 py-2 text-sm" style="border-color: rgba(158,193,163,0.3);"
                   placeholder="https://...">
               </div>
               <div>
-                <label for="linkedin" class="block text-sm font-medium text-gray-700 mb-1">LinkedIn</label>
+                <label for="linkedin" class="block text-sm font-medium mb-1" style="color: var(--jet-black);">LinkedIn</label>
                 <input type="url" id="linkedin" name="linkedin"
-                  class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  class="w-full border rounded-xl px-3 py-2 text-sm" style="border-color: rgba(158,193,163,0.3);"
                   placeholder="https://linkedin.com/in/...">
               </div>
             </div>
 
             <!-- Template selector -->
             <div>
-              <label for="templateId" class="block text-sm font-medium text-gray-700 mb-1">Plantilla *</label>
+              <label for="templateId" class="block text-sm font-medium mb-1" style="color: var(--jet-black);">Plantilla *</label>
               <select id="templateId" name="templateId" required
-                class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                class="w-full border rounded-xl px-3 py-2 text-sm" style="border-color: rgba(158,193,163,0.3);">
                 <option value="corporativa">Corporativa</option>
                 <option value="moderna-banner">Moderna con Banner</option>
                 <option value="minimalista">Minimalista</option>
               </select>
             </div>
 
-            <!-- Image upload -->
-            <div>
-              <label for="image" class="block text-sm font-medium text-gray-700 mb-1">Foto de perfil *</label>
-              <input type="file" id="image" name="image" accept="image/*" required
-                class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-              <p class="text-xs text-gray-400 mt-1">PNG o JPG recomendado. Se usara para generar el banner.</p>
+            <!-- Section C: File Upload Dropzones -->
+            <div class="space-y-4">
+              <label class="block text-sm font-medium" style="color: var(--jet-black);">Archivos</label>
+
+              <!-- Profile image dropzone -->
+              <div class="dropzone" id="dropzone-image">
+                <input type="file" id="image" name="image" accept="image/png,image/jpeg,image/webp" required class="hidden">
+                <div class="dropzone-content">
+                  <svg class="mx-auto mb-2 w-8 h-8 text-muted-teal" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                  </svg>
+                  <p class="text-sm font-medium" style="color: var(--jet-black);">Arrastra tu foto aquí</p>
+                  <p class="text-xs text-gray-500">o haz clic para seleccionar</p>
+                  <p class="text-xs mt-1" style="color: var(--muted-teal);">PNG, JPG o WebP • Máx 15MB</p>
+                </div>
+                <div id="dropzone-image-preview" class="hidden"></div>
+              </div>
+
+              <!-- Background image dropzone -->
+              <div class="dropzone" id="dropzone-background">
+                <input type="file" id="backgroundImage" name="backgroundImage" accept="image/png,image/jpeg,image/webp" class="hidden">
+                <div class="dropzone-content">
+                  <svg class="mx-auto mb-2 w-8 h-8 text-muted-teal" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                  </svg>
+                  <p class="text-sm font-medium" style="color: var(--jet-black);">Fondo personalizado</p>
+                  <p class="text-xs text-gray-500">Opcional • Arrastra o haz clic</p>
+                  <p class="text-xs mt-1" style="color: var(--muted-teal);">Si no subes, se usa el fondo por defecto</p>
+                </div>
+                <div id="dropzone-bg-preview" class="hidden"></div>
+              </div>
             </div>
 
-            <!-- Custom background (optional) -->
+            <!-- Section D: Composition Mode -->
             <div>
-              <label for="backgroundImage" class="block text-sm font-medium text-gray-700 mb-1">Fondo personalizado <span class="text-gray-400">(opcional)</span></label>
-              <input type="file" id="backgroundImage" name="backgroundImage" accept="image/png,image/jpeg,image/webp"
-                class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100">
-              <p class="text-xs text-gray-400 mt-1">Si no subes un fondo, se usara el fondo corporativo por defecto. Max 15MB.</p>
-            </div>
-
-            <!-- Image composition mode -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Modo de composicion de imagen</label>
+              <label class="block text-sm font-medium mb-2" style="color: var(--jet-black);">Modo de composición de imagen</label>
               <div class="grid grid-cols-3 gap-3">
                 <!-- Centrado -->
                 <label class="cursor-pointer">
                   <input type="radio" name="compositionMode" value="centered" checked class="peer hidden">
-                  <div class="border-2 border-gray-200 rounded-lg p-3 text-center peer-checked:border-blue-500 peer-checked:bg-blue-50 hover:border-gray-300 transition-colors">
+                  <div class="composition-card peer-checked:active">
                     <span class="text-2xl block mb-1">🎯</span>
-                    <span class="text-sm font-medium text-gray-700 block">Centrado</span>
+                    <span class="text-sm font-medium block" style="color: var(--jet-black);">Centrado</span>
                     <span class="text-xs text-gray-500">100% centro-centro</span>
                   </div>
                 </label>
                 <!-- Inferior -->
                 <label class="cursor-pointer">
                   <input type="radio" name="compositionMode" value="bottom" class="peer hidden">
-                  <div class="border-2 border-gray-200 rounded-lg p-3 text-center peer-checked:border-blue-500 peer-checked:bg-blue-50 hover:border-gray-300 transition-colors">
+                  <div class="composition-card peer-checked:active">
                     <span class="text-2xl block mb-1">⬇️</span>
-                    <span class="text-sm font-medium text-gray-700 block">Inferior</span>
+                    <span class="text-sm font-medium block" style="color: var(--jet-black);">Inferior</span>
                     <span class="text-xs text-gray-500">80% centro-abajo</span>
                   </div>
                 </label>
                 <!-- Avanzado -->
                 <label class="cursor-pointer">
                   <input type="radio" name="compositionMode" value="advanced" id="radio-advanced" class="peer hidden">
-                  <div class="border-2 border-gray-200 rounded-lg p-3 text-center peer-checked:border-blue-500 peer-checked:bg-blue-50 hover:border-gray-300 transition-colors">
+                  <div class="composition-card peer-checked:active">
                     <span class="text-2xl block mb-1">⚙️</span>
-                    <span class="text-sm font-medium text-gray-700 block">Avanzado</span>
+                    <span class="text-sm font-medium block" style="color: var(--jet-black);">Avanzado</span>
                     <span class="text-xs text-gray-500">Personalizado</span>
                   </div>
                 </label>
               </div>
 
               <!-- Advanced params (hidden by default) -->
-              <div id="advanced-params" class="hidden mt-3 p-4 bg-gray-50 rounded-lg border border-gray-200 space-y-3">
+              <div id="advanced-params" class="hidden mt-3 p-4 rounded-xl space-y-3" style="background: rgba(207,224,195,0.1); border: 1px solid rgba(158,193,163,0.3);">
                 <div class="grid grid-cols-2 gap-3">
                   <div>
                     <label for="scalePercent" class="block text-xs font-medium text-gray-600 mb-1">Escala (%)</label>
-                    <select id="scalePercent" class="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <select id="scalePercent" class="w-full border rounded-xl px-2 py-1.5 text-sm" style="border-color: rgba(158,193,163,0.3);">
                       <option value="80">80</option>
                       <option value="90">90</option>
                       <option value="94" selected>94</option>
@@ -161,7 +199,7 @@
                   </div>
                   <div>
                     <label for="paddingPercent" class="block text-xs font-medium text-gray-600 mb-1">Padding (%)</label>
-                    <select id="paddingPercent" class="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <select id="paddingPercent" class="w-full border rounded-xl px-2 py-1.5 text-sm" style="border-color: rgba(158,193,163,0.3);">
                       <option value="0" selected>0</option>
                       <option value="5">5</option>
                       <option value="10">10</option>
@@ -170,16 +208,16 @@
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                   <div>
-                    <label for="horizontalAlign" class="block text-xs font-medium text-gray-600 mb-1">Alineacion horizontal</label>
-                    <select id="horizontalAlign" class="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <label for="horizontalAlign" class="block text-xs font-medium text-gray-600 mb-1">Alineación horizontal</label>
+                    <select id="horizontalAlign" class="w-full border rounded-xl px-2 py-1.5 text-sm" style="border-color: rgba(158,193,163,0.3);">
                       <option value="left">left</option>
                       <option value="center" selected>center</option>
                       <option value="right">right</option>
                     </select>
                   </div>
                   <div>
-                    <label for="verticalAlign" class="block text-xs font-medium text-gray-600 mb-1">Alineacion vertical</label>
-                    <select id="verticalAlign" class="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <label for="verticalAlign" class="block text-xs font-medium text-gray-600 mb-1">Alineación vertical</label>
+                    <select id="verticalAlign" class="w-full border rounded-xl px-2 py-1.5 text-sm" style="border-color: rgba(158,193,163,0.3);">
                       <option value="top">top</option>
                       <option value="center" selected>center</option>
                       <option value="bottom">bottom</option>
@@ -189,29 +227,29 @@
                 <div class="grid grid-cols-2 gap-3">
                   <div>
                     <label for="offsetX" class="block text-xs font-medium text-gray-600 mb-1">Offset X</label>
-                    <input type="number" id="offsetX" value="0" class="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <input type="number" id="offsetX" value="0" class="w-full border rounded-xl px-2 py-1.5 text-sm" style="border-color: rgba(158,193,163,0.3);">
                   </div>
                   <div>
                     <label for="offsetY" class="block text-xs font-medium text-gray-600 mb-1">Offset Y</label>
-                    <input type="number" id="offsetY" value="0" class="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <input type="number" id="offsetY" value="0" class="w-full border rounded-xl px-2 py-1.5 text-sm" style="border-color: rgba(158,193,163,0.3);">
                   </div>
                 </div>
               </div>
             </div>
 
-            <!-- Action buttons -->
+            <!-- Section E: Action Buttons -->
             <div class="flex gap-3 pt-2">
               <button
                 type="button"
                 id="btn-preview"
-                class="flex-1 bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 transition-colors text-sm font-medium"
+                class="btn-outlined-cerulean flex-1 py-2.5 px-4 rounded-xl text-sm font-medium"
               >
                 Vista previa
               </button>
               <button
                 type="submit"
                 id="btn-generate"
-                class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors text-sm font-medium"
+                class="btn-gradient flex-1 py-2.5 px-4 rounded-xl text-sm font-medium"
               >
                 Generar firma
               </button>
@@ -221,55 +259,60 @@
         </section>
       </div>
 
-      <!-- Right Column: Preview + Output -->
-      <div class="space-y-6">
+      <!-- Right Column: Preview + Output (STICKY) -->
+      <div class="space-y-6 lg:sticky lg:top-8 lg:self-start">
 
         <!-- Preview Area -->
-        <section class="bg-white rounded-lg shadow p-6">
+        <section class="bg-white rounded-2xl shadow-sm p-6">
           <div class="flex items-center justify-between mb-4">
-            <h2 class="text-lg font-semibold text-gray-700">Vista previa</h2>
-            <span id="preview-badge" class="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded hidden">Placeholder</span>
+            <h2 class="text-lg font-semibold" style="color: var(--jet-black);">Vista previa</h2>
+            <span id="preview-badge" class="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded-lg hidden">Placeholder</span>
           </div>
-          <div id="preview-container" class="border border-dashed border-gray-300 rounded-md p-4 min-h-[200px] flex items-center justify-center">
-            <p id="preview-placeholder" class="text-gray-400 text-sm">La vista previa aparecera aqui</p>
+          <div id="preview-container" class="border-2 border-dashed rounded-2xl p-4 min-h-[200px] flex items-center justify-center" style="border-color: var(--muted-teal);">
+            <p id="preview-placeholder" class="text-gray-400 text-sm">La vista previa aparecerá aquí</p>
             <iframe id="preview-iframe" class="w-full hidden" style="min-height: 250px; border: none;"></iframe>
           </div>
         </section>
 
         <!-- Output Area -->
-        <section id="output-section" class="bg-white rounded-lg shadow p-6 hidden">
+        <section id="output-section" class="bg-white rounded-2xl shadow-sm p-6 hidden">
           <div class="flex items-center justify-between mb-4">
-            <h2 class="text-lg font-semibold text-gray-700">Firma generada</h2>
+            <h2 class="text-lg font-semibold" style="color: var(--jet-black);">Firma generada</h2>
             <div class="flex gap-2">
               <button
                 id="btn-copy"
                 type="button"
-                class="bg-green-600 text-white py-1.5 px-3 rounded-md hover:bg-green-700 transition-colors text-sm font-medium"
+                class="bg-cerulean text-white py-1.5 px-3 rounded-xl hover:opacity-90 transition-opacity text-sm font-medium"
               >
                 Copiar HTML
               </button>
               <button
                 id="btn-download"
                 type="button"
-                class="bg-indigo-600 text-white py-1.5 px-3 rounded-md hover:bg-indigo-700 transition-colors text-sm font-medium"
+                class="btn-outlined-cerulean py-1.5 px-3 rounded-xl text-sm font-medium"
               >
                 Descargar
               </button>
               <button
                 id="btn-open-window"
                 type="button"
-                class="bg-amber-600 text-white py-1.5 px-3 rounded-md hover:bg-amber-700 transition-colors text-sm font-medium"
+                class="btn-outlined-jet py-1.5 px-3 rounded-xl text-sm font-medium"
               >
                 Abrir
               </button>
             </div>
           </div>
-          <div id="output-container" class="border border-gray-200 rounded-md p-4">
+          <div id="output-container" class="border rounded-2xl p-4" style="border-color: rgba(158,193,163,0.3);">
             <iframe id="output-iframe" class="w-full" style="min-height: 250px; border: none;"></iframe>
           </div>
+          <!-- Quick copy buttons for email clients -->
+          <div class="flex gap-2 mt-3">
+            <button id="btn-copy-rich" type="button" class="flex-1 bg-cerulean text-white py-2 px-3 rounded-xl text-sm font-medium hover:opacity-90 transition-opacity">📋 Copiar para Outlook</button>
+            <button id="btn-copy-gmail" type="button" class="flex-1 btn-outlined-cerulean py-2 px-3 rounded-xl text-sm font-medium">📧 Copiar para Gmail</button>
+          </div>
           <details class="mt-3">
-            <summary class="text-sm text-gray-500 cursor-pointer hover:text-gray-700">Ver codigo HTML</summary>
-            <pre id="output-html" class="mt-2 bg-gray-50 border border-gray-200 rounded p-3 text-xs overflow-x-auto max-h-64 overflow-y-auto"></pre>
+            <summary class="text-sm text-gray-500 cursor-pointer hover:text-cerulean">Ver código HTML</summary>
+            <pre id="output-html" class="mt-2 bg-gray-50 border rounded-xl p-3 text-xs overflow-x-auto max-h-64 overflow-y-auto" style="border-color: rgba(158,193,163,0.3);"></pre>
           </details>
         </section>
 
