@@ -91,8 +91,8 @@ const FieldConfig = {
    * Used by the cropper to enforce correct aspect ratios.
    */
   templateImageConfig: {
-    'corporativa': { width: 130, height: 130, aspectRatio: 1, label: 'Cuadrado (130×130px)' },
-    'moderna-banner': { width: 200, height: 260, aspectRatio: 200/260, label: 'Portrait (200×260px)' },
+    'corporativa': { width: 130, height: 160, aspectRatio: 130/160, label: 'Portrait (130×160px)' },
+    'moderna-banner': { width: 180, height: 210, aspectRatio: 180/210, label: 'Portrait (180×210px)' },
     'minimalista': { width: 56, height: 56, aspectRatio: 1, label: 'Cuadrado (56×56px)' },
   },
 

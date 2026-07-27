@@ -568,6 +568,20 @@ ${html}
   initDropzone('dropzone-image', 'image', 'dropzone-image-preview');
   initDropzone('dropzone-background', 'backgroundImage', 'dropzone-bg-preview');
 
+  // --- Demo Data ---
+  const btnDemoData = document.getElementById('btn-demo-data');
+  if (btnDemoData) {
+    btnDemoData.addEventListener('click', () => {
+      document.getElementById('nombre').value = 'María López';
+      document.getElementById('cargo').value = 'Product Manager';
+      document.getElementById('email').value = 'maria.lopez@empresa.com';
+      document.getElementById('telefono').value = '+593 99 123 4567';
+      document.getElementById('website').value = 'https://empresa.com';
+      document.getElementById('linkedin').value = 'https://linkedin.com/in/marialopez';
+      showStatus(formStatus, 'Datos de ejemplo cargados. Puedes editarlos antes de generar.', 'success');
+    });
+  }
+
   // --- Rich Copy for Outlook (copies as text/html to clipboard) ---
   const btnCopyRich = document.getElementById('btn-copy-rich');
   if (btnCopyRich) {

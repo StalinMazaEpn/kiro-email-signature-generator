@@ -35,6 +35,14 @@ function loadTemplate(templateId) {
 function render(templateId, fields) {
   const template = loadTemplate(templateId);
   // Mustache treats falsy values as "section not shown", so ensure nulls are handled
+
+  // Extract LinkedIn username from URL (e.g., "https://linkedin.com/in/marialopez" → "marialopez")
+  let linkedinUsername = null;
+  if (fields.linkedin) {
+    const match = fields.linkedin.match(/linkedin\.com\/in\/([^/?#]+)/);
+    linkedinUsername = match ? match[1] : 'LinkedIn';
+  }
+
   const data = {
     nombre: fields.nombre || '',
     cargo: fields.cargo || '',
@@ -42,6 +50,7 @@ function render(templateId, fields) {
     telefono: fields.telefono || '',
     website: fields.website || null,
     linkedin: fields.linkedin || null,
+    linkedinUsername: linkedinUsername,
     bannerUrl: fields.bannerUrl || '',
   };
   return Mustache.render(template, data);
