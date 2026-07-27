@@ -59,7 +59,7 @@ graph TD
 5. Frontend muestra firma y permite copiar/descargar
 
 ### Flujo B: Generación con IA
-1. Usuario pega texto libre ("Jonathan Arana, jonathan@contoso.com, Tech Lead...")
+1. Usuario pega texto libre ("Carlos Méndez, carlos@empresa.com, Tech Lead...")
 2. Frontend envía POST `/extract-fields` con el texto
 3. Lambda: envía prompt a AI provider → parsea JSON → retorna campos
 4. Frontend pre-llena el formulario → usuario revisa → sube foto → continúa Flujo A

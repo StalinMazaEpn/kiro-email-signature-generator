@@ -97,7 +97,7 @@ El servidor arranca en `http://localhost:3000` con modo local (no necesita AWS).
 ```bash
 curl -X POST http://localhost:3000/preview-signature \
   -H "Content-Type: application/json" \
-  -d '{"nombre":"Jonathan Arana","cargo":"Tech Lead","email":"jonathan@contoso.com","telefono":"+593996666193","templateId":"corporativa"}'
+  -d '{"nombre":"Carlos Méndez","cargo":"Tech Lead","email":"carlos@empresa.com","telefono":"+593991234567","templateId":"corporativa"}'
 ```
 
 ### Ejemplo: Extracción de campos con IA
@@ -105,7 +105,7 @@ curl -X POST http://localhost:3000/preview-signature \
 ```bash
 curl -X POST http://localhost:3000/extract-fields \
   -H "Content-Type: application/json" \
-  -d '{"text":"Jonathan Arana, jonathan@contoso.com, Tech Lead, +593996666193"}'
+  -d '{"text":"Carlos Méndez, carlos@empresa.com, Tech Lead, +593991234567"}'
 ```
 
 ## Tests
@@ -268,7 +268,7 @@ Guión para demostración en video de las funcionalidades principales.
 
 1. **Click en la pestaña "Extraer con IA"**
 2. **Pegar texto libre:**
-   > "Soy Jonathan Arana, trabajo como Tech Lead en Contoso. Mi correo es jonathan@contoso.com y mi teléfono +593 99 666 6193. Mi perfil de LinkedIn es linkedin.com/in/jarana"
+   > "Soy Carlos Méndez, trabajo como Tech Lead en TechCorp. Mi correo es carlos@empresa.com y mi teléfono +593 99 123 4567. Mi perfil de LinkedIn es linkedin.com/in/cmendez"
 3. **Click en "Extraer Campos"** → mostrar loading → campos se pre-llenan automáticamente
 4. **Mostrar feedback:** campos encontrados vs campos faltantes
 5. **Editar un campo** manualmente (demostrar que es editable)

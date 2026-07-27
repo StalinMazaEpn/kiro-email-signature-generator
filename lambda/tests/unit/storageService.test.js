@@ -45,8 +45,8 @@ describe('storageService (local mode)', () => {
 
   describe('getOriginalKey', () => {
     test('generates key with originals/ prefix', () => {
-      const key = getOriginalKey('Jonathan Arana');
-      expect(key).toMatch(/^originals\/\d+-jonathan_arana\.png$/);
+      const key = getOriginalKey('Carlos Méndez');
+      expect(key).toMatch(/^originals\/\d+-carlos_m_ndez\.png$/);
     });
 
     test('sanitizes special characters', () => {
@@ -62,8 +62,8 @@ describe('storageService (local mode)', () => {
 
   describe('getBannerKey', () => {
     test('generates key with banners/ prefix and -banner suffix', () => {
-      const key = getBannerKey('Jonathan Arana');
-      expect(key).toMatch(/^banners\/\d+-jonathan_arana-banner\.png$/);
+      const key = getBannerKey('Carlos Méndez');
+      expect(key).toMatch(/^banners\/\d+-carlos_m_ndez-banner\.png$/);
     });
   });
 });

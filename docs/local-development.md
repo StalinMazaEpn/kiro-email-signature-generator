@@ -64,9 +64,9 @@ Cuando generas una firma en modo local, las imágenes se guardan en:
 ```
 lambda/local-storage/
 ├── originals/        # Fotos originales subidas
-│   └── 1719000000-jonathan_arana.png
+│   └── 1719000000-carlos_mendez.png
 └── banners/          # Banners procesados (copia del original en local)
-    └── 1719000000-jonathan_arana-banner.png
+    └── 1719000000-carlos_mendez-banner.png
 ```
 
 Esta carpeta está en `.gitignore`. El dev server las sirve en `/storage/...`.
@@ -114,17 +114,17 @@ Invoke-RestMethod -Uri "http://localhost:3000/templates"
 
 # Preview
 $body = @{
-  nombre = "Jonathan Arana"
+  nombre = "Carlos Méndez"
   cargo = "Tech Lead"
-  email = "jonathan@contoso.com"
-  telefono = "+593996666193"
+  email = "carlos@empresa.com"
+  telefono = "+593991234567"
   templateId = "corporativa"
 } | ConvertTo-Json
 
 Invoke-RestMethod -Uri "http://localhost:3000/preview-signature" -Method Post -Body $body -ContentType "application/json"
 
 # Extracción de campos (mock)
-$body = @{ text = "Jonathan Arana, jonathan@contoso.com, Tech Lead, +593996666193" } | ConvertTo-Json
+$body = @{ text = "Carlos Méndez, carlos@empresa.com, Tech Lead, +593991234567" } | ConvertTo-Json
 Invoke-RestMethod -Uri "http://localhost:3000/extract-fields" -Method Post -Body $body -ContentType "application/json"
 ```
 
@@ -134,12 +134,12 @@ Invoke-RestMethod -Uri "http://localhost:3000/extract-fields" -Method Post -Body
 # Preview
 curl -X POST http://localhost:3000/preview-signature \
   -H "Content-Type: application/json" \
-  -d '{"nombre":"Jonathan Arana","cargo":"Tech Lead","email":"jonathan@contoso.com","telefono":"+593","templateId":"minimalista"}'
+  -d '{"nombre":"Carlos Méndez","cargo":"Tech Lead","email":"carlos@empresa.com","telefono":"+593","templateId":"minimalista"}'
 
 # Extracción
 curl -X POST http://localhost:3000/extract-fields \
   -H "Content-Type: application/json" \
-  -d '{"text":"Jonathan Arana, jonathan@contoso.com, Tech Lead"}'
+  -d '{"text":"Carlos Méndez, carlos@empresa.com, Tech Lead"}'
 ```
 
 ## Siguiente paso: Admin Panel

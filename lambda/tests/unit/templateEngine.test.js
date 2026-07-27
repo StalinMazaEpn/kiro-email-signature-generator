@@ -10,12 +10,12 @@ const {
 
 describe('templateEngine', () => {
   const sampleFields = {
-    nombre: 'Jonathan Arana',
+    nombre: 'Carlos Méndez',
     cargo: 'Tech Lead',
-    email: 'jonathan@contoso.com',
-    telefono: '+593996666193',
-    website: 'https://jonathan.dev',
-    linkedin: 'https://linkedin.com/in/jonathan-arana',
+    email: 'carlos@empresa.com',
+    telefono: '+593991234567',
+    website: 'https://miempresa.com',
+    linkedin: 'https://linkedin.com/in/carlos-mendez',
     bannerUrl: 'https://example.com/banner.png',
   };
 
@@ -35,18 +35,18 @@ describe('templateEngine', () => {
   describe('render', () => {
     test.each(Object.keys(TEMPLATES))('renders %s with all fields', (templateId) => {
       const html = render(templateId, sampleFields);
-      expect(html).toContain('Jonathan Arana');
+      expect(html).toContain('Carlos Méndez');
       expect(html).toContain('Tech Lead');
-      expect(html).toContain('jonathan@contoso.com');
+      expect(html).toContain('carlos@empresa.com');
       expect(html).toContain('https://example.com/banner.png');
     });
 
     test('renders without optional fields (website, linkedin)', () => {
       const fields = { ...sampleFields, website: null, linkedin: null };
       const html = render('corporativa', fields);
-      expect(html).toContain('Jonathan Arana');
+      expect(html).toContain('Carlos Méndez');
       expect(html).not.toContain('linkedin.com');
-      expect(html).not.toContain('jonathan.dev');
+      expect(html).not.toContain('miempresa.com');
     });
 
     test('throws on invalid templateId', () => {

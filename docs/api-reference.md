@@ -13,12 +13,12 @@ Genera la firma completa: sube imagen, procesa banner, compila HTML.
 **Request:**
 ```json
 {
-  "nombre": "Jonathan Arana",
+  "nombre": "Carlos Méndez",
   "cargo": "Tech Lead",
-  "email": "jonathan@contoso.com",
-  "telefono": "+593996666193",
-  "website": "https://jonathan.dev",
-  "linkedin": "https://linkedin.com/in/jonathan-arana",
+  "email": "carlos@empresa.com",
+  "telefono": "+593991234567",
+  "website": "https://miempresa.com",
+  "linkedin": "https://linkedin.com/in/carlos-mendez",
   "templateId": "corporativa",
   "image": "iVBORw0KGgo... (base64)"
 }
@@ -40,7 +40,7 @@ Genera la firma completa: sube imagen, procesa banner, compila HTML.
 {
   "success": true,
   "html": "<table>...</table>",
-  "bannerUrl": "http://localhost:3000/storage/banners/1234-jonathan_arana-banner.png"
+  "bannerUrl": "http://localhost:3000/storage/banners/1234-carlos_mendez-banner.png"
 }
 ```
 
@@ -61,10 +61,10 @@ Preview rápido sin procesar imagen. Usa un banner placeholder.
 **Request:**
 ```json
 {
-  "nombre": "Jonathan Arana",
+  "nombre": "Carlos Méndez",
   "cargo": "Tech Lead",
-  "email": "jonathan@contoso.com",
-  "telefono": "+593996666193",
+  "email": "carlos@empresa.com",
+  "telefono": "+593991234567",
   "templateId": "moderna-banner"
 }
 ```
@@ -96,7 +96,7 @@ Extrae campos de contacto de un texto libre usando IA.
 **Request:**
 ```json
 {
-  "text": "Jonathan Arana, jonathan@contoso.com, Tech Lead en Contoso, +593996666193, https://jonathan.dev"
+  "text": "Carlos Méndez, carlos@empresa.com, Tech Lead en TechCorp, +593991234567, https://miempresa.com"
 }
 ```
 
@@ -109,11 +109,11 @@ Extrae campos de contacto de un texto libre usando IA.
 {
   "success": true,
   "fields": {
-    "nombre": "Jonathan Arana",
-    "cargo": "Tech Lead en Contoso",
-    "email": "jonathan@contoso.com",
-    "telefono": "+593996666193",
-    "website": "https://jonathan.dev",
+    "nombre": "Carlos Méndez",
+    "cargo": "Tech Lead en TechCorp",
+    "email": "carlos@empresa.com",
+    "telefono": "+593991234567",
+    "website": "https://miempresa.com",
     "linkedin": null
   }
 }
@@ -123,7 +123,7 @@ Extrae campos de contacto de un texto libre usando IA.
 ```json
 {
   "success": true,
-  "fields": { "nombre": "Jonathan Arana", "cargo": "Tech Lead", ... },
+  "fields": { "nombre": "Carlos Méndez", "cargo": "Tech Lead", ... },
   "_mock": true,
   "_message": "AI credentials not configured. Using basic regex extraction."
 }

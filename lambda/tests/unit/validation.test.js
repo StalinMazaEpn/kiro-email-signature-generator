@@ -10,10 +10,10 @@ const {
 
 describe('validateGenerateRequest', () => {
   const validBody = {
-    nombre: 'Jonathan Arana',
+    nombre: 'Carlos Méndez',
     cargo: 'Tech Lead',
-    email: 'jonathan@contoso.com',
-    telefono: '+593996666193',
+    email: 'carlos@empresa.com',
+    telefono: '+593991234567',
     templateId: 'corporativa',
     image: 'iVBORw0KGgoAAAANSUhEUg==', // base64 stub
   };
@@ -67,9 +67,9 @@ describe('validateGenerateRequest', () => {
 
 describe('validatePreviewRequest', () => {
   const validBody = {
-    nombre: 'Jonathan Arana',
+    nombre: 'Carlos Méndez',
     cargo: 'Tech Lead',
-    email: 'jonathan@contoso.com',
+    email: 'carlos@empresa.com',
     templateId: 'moderna-banner',
   };
 
@@ -96,7 +96,7 @@ describe('validatePreviewRequest', () => {
 
 describe('validateExtractRequest', () => {
   test('accepts valid text', () => {
-    const body = { text: 'Jonathan Arana, jonathan@contoso.com, Tech Lead' };
+    const body = { text: 'Carlos Méndez, carlos@empresa.com, Tech Lead' };
     expect(validateExtractRequest(body)).toEqual({ valid: true });
   });
 
