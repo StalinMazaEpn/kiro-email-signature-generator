@@ -1,56 +1,60 @@
 <!-- Email Signature: Moderna con Banner -->
-<!-- Two-column layout: photo left with gradient, contact data right -->
-<table cellpadding="0" cellspacing="0" border="0" style="font-family: Arial, Helvetica, sans-serif; background-color: #f4f7f6; border-radius: 16px; overflow: hidden; width: 550px; border-collapse: separate;">
+<!-- Two-column layout: photo left, contact data right. Outlook-compatible. -->
+<table cellpadding="0" cellspacing="0" border="0" style="width: 550px; font-family: Arial, Helvetica, sans-serif; border-collapse: collapse;">
   <tr>
-    <!-- LEFT SIDE: GRADIENT + PHOTO -->
-    <td width="200" align="center" valign="bottom" style="background-color: #40798c; padding: 0; text-align: center; vertical-align: bottom;">
+    <!-- LEFT SIDE: PHOTO -->
+    <td width="200" align="center" valign="bottom" bgcolor="#40798c" style="background-color: #40798c; padding: 0; text-align: center; vertical-align: bottom;">
       <img src="{{{bannerUrl}}}" alt="{{nombre}}" width="200" height="260" style="display: block; width: 200px; height: 260px;" />
     </td>
 
     <!-- RIGHT SIDE: CONTACT DATA -->
-    <td valign="top" style="padding: 25px 20px 20px 25px; background-color: #cfe0c3;">
-      <!-- Name and Title -->
-      <div style="font-size: 18px; font-weight: bold; color: #1f363d; margin-bottom: 2px;">
-        {{nombre}}
-      </div>
-      <div style="font-size: 11px; font-weight: 600; color: #40798c; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px;">
-        {{cargo}}
-      </div>
-
-      <!-- Separator Line -->
-      <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 14px;">
-        <tr><td style="border-bottom: 2px solid #70a9a1; font-size: 1px; line-height: 1px;">&nbsp;</td></tr>
-      </table>
-
-      <!-- Contact Info -->
-      <table cellpadding="0" cellspacing="0" border="0" style="font-size: 12px; color: #1f363d; line-height: 22px;">
+    <td valign="top" bgcolor="#cfe0c3" style="background-color: #cfe0c3; padding: 25px 20px 20px 25px; vertical-align: top;">
+      <table cellpadding="0" cellspacing="0" border="0" style="border-collapse: collapse;">
+        <!-- Name -->
         <tr>
-          <td style="font-weight: bold; padding-right: 8px; color: #40798c; vertical-align: top;">T:</td>
-          <td><a href="tel:{{telefono}}" style="color: #1f363d; text-decoration: none;">{{telefono}}</a></td>
+          <td colspan="2" style="padding: 0 0 2px 0; font-size: 18px; font-weight: bold; color: #1f363d; font-family: Arial, Helvetica, sans-serif;">
+            {{nombre}}
+          </td>
         </tr>
+        <!-- Title -->
         <tr>
-          <td style="font-weight: bold; padding-right: 8px; color: #40798c; vertical-align: top;">E:</td>
-          <td><a href="mailto:{{email}}" style="color: #1f363d; text-decoration: none;">{{email}}</a></td>
+          <td colspan="2" style="padding: 0 0 14px 0; font-size: 11px; font-weight: 600; color: #40798c; letter-spacing: 1px; font-family: Arial, Helvetica, sans-serif;">
+            {{cargo}}
+          </td>
         </tr>
-      </table>
-
-      <!-- Website and LinkedIn -->
-      {{#website}}
-      <table cellpadding="0" cellspacing="0" border="0" style="font-size: 12px; color: #1f363d; line-height: 22px; margin-top: 4px;">
+        <!-- Separator -->
         <tr>
-          <td style="font-weight: bold; padding-right: 8px; color: #40798c; vertical-align: top;">W:</td>
-          <td><a href="{{{website}}}" target="_blank" style="color: #1f363d; text-decoration: none;">Web</a></td>
+          <td colspan="2" style="padding: 0 0 14px 0; border-bottom: 2px solid #70a9a1; font-size: 1px; line-height: 1px;">
+            &nbsp;
+          </td>
         </tr>
-      </table>
-      {{/website}}
-      {{#linkedin}}
-      <table cellpadding="0" cellspacing="0" border="0" style="font-size: 12px; color: #1f363d; line-height: 22px; margin-top: 4px;">
+        <!-- Spacer after separator -->
+        <tr><td colspan="2" style="font-size: 1px; line-height: 14px;">&nbsp;</td></tr>
+        <!-- Phone -->
         <tr>
-          <td style="font-weight: bold; padding-right: 8px; color: #40798c; vertical-align: top;">in:</td>
-          <td><a href="{{{linkedin}}}" target="_blank" style="color: #1f363d; text-decoration: none;">LinkedIn</a></td>
+          <td style="font-size: 12px; font-weight: bold; color: #40798c; padding-right: 8px; vertical-align: top; font-family: Arial, Helvetica, sans-serif;">T:</td>
+          <td style="font-size: 12px; color: #1f363d; font-family: Arial, Helvetica, sans-serif;"><a href="tel:{{telefono}}" style="color: #1f363d; text-decoration: none;">{{telefono}}</a></td>
         </tr>
+        <!-- Email -->
+        <tr>
+          <td style="font-size: 12px; font-weight: bold; color: #40798c; padding-right: 8px; vertical-align: top; font-family: Arial, Helvetica, sans-serif;">E:</td>
+          <td style="font-size: 12px; color: #1f363d; font-family: Arial, Helvetica, sans-serif;"><a href="mailto:{{email}}" style="color: #1f363d; text-decoration: none;">{{email}}</a></td>
+        </tr>
+        <!-- Website -->
+        {{#website}}
+        <tr>
+          <td style="font-size: 12px; font-weight: bold; color: #40798c; padding-right: 8px; vertical-align: top; font-family: Arial, Helvetica, sans-serif;">W:</td>
+          <td style="font-size: 12px; color: #1f363d; font-family: Arial, Helvetica, sans-serif;"><a href="{{{website}}}" style="color: #1f363d; text-decoration: none;">{{website}}</a></td>
+        </tr>
+        {{/website}}
+        <!-- LinkedIn -->
+        {{#linkedin}}
+        <tr>
+          <td style="font-size: 12px; font-weight: bold; color: #40798c; padding-right: 8px; vertical-align: top; font-family: Arial, Helvetica, sans-serif;">in:</td>
+          <td style="font-size: 12px; color: #1f363d; font-family: Arial, Helvetica, sans-serif;"><a href="{{{linkedin}}}" style="color: #1f363d; text-decoration: none;">LinkedIn</a></td>
+        </tr>
+        {{/linkedin}}
       </table>
-      {{/linkedin}}
     </td>
   </tr>
 </table>

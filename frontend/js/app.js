@@ -25,6 +25,11 @@
   // Store generated HTML for clipboard/download/open
   let generatedHtml = '';
 
+  // Cached cropped images to avoid re-cropping on every generate
+  let cachedProfileCrop = null;
+  let cachedBgCrop = null;
+  let cachedBgTemplateId = null; // track which template the bg was cropped for
+
   // --- Composition Mode ---
   const compositionRadios = document.querySelectorAll('input[name="compositionMode"]');
   const advancedParamsDiv = document.getElementById('advanced-params');
@@ -223,18 +228,15 @@
       return;
     }
 
-    // Open cropper for profile photo (free crop)
-    const profileDataUrl = await fileToDataUrl(profileFile);
-    const croppedProfileBase64 = await CropperHandler.openFree(profileDataUrl);
-    if (!croppedProfileBase64) {
-      showStatus(formStatus, 'Recorte de foto cancelado.', 'warning');
-      return;
+    // Use cached cropped image if available, otherwise use raw file
+    if (cachedProfileCrop) {
+      data.image = cachedProfileCrop;
+    } else {
+      data.image = await fileToBase64(profileFile);
     }
-
-    data.image = croppedProfileBase64;
     data.compositionParams = getCompositionParams();
 
-    // Check for optional custom background image — open cropper for correct dimensions
+    // Check for optional custom background image
     const bgInput = document.getElementById('backgroundImage');
     if (bgInput && bgInput.files && bgInput.files[0]) {
       const bgFile = bgInput.files[0];
@@ -244,18 +246,13 @@
         return;
       }
       
-      // Open cropper modal for the user to crop to correct template dimensions
-      const bgDataUrl = await fileToDataUrl(bgFile);
-      const croppedBase64 = await CropperHandler.open(bgDataUrl, data.templateId);
-      
-      if (!croppedBase64) {
-        // User cancelled the crop
-        showStatus(formStatus, 'Recorte cancelado. Usa el botón Generar nuevamente.', 'warning');
-        setLoading(btnGenerate, false, 'Generar firma');
-        return;
+      // Use cached crop if available, otherwise send raw image
+      // (image-tools will use outputWidth/outputHeight from compositionParams)
+      if (cachedBgCrop) {
+        data.backgroundImage = cachedBgCrop;
+      } else {
+        data.backgroundImage = await fileToBase64(bgFile);
       }
-      
-      data.backgroundImage = croppedBase64;
     }
 
     setLoading(btnGenerate, true, 'Generando...');
@@ -497,13 +494,11 @@ ${html}
     const preview = document.getElementById(previewId);
     if (!dropzone || !input) return;
 
-    // Click to select
     dropzone.addEventListener('click', (e) => {
-      if (e.target === input) return;
+      if (e.target === input || e.target.closest('.btn-crop')) return;
       input.click();
     });
 
-    // Drag events
     ['dragenter', 'dragover'].forEach(evt => {
       dropzone.addEventListener(evt, (e) => { e.preventDefault(); dropzone.classList.add('drag-over'); });
     });
@@ -519,16 +514,47 @@ ${html}
       }
     });
 
-    // Show preview on file select
     input.addEventListener('change', () => {
+      // Clear cached crop when new file is selected
+      if (inputId === 'image') cachedProfileCrop = null;
+      if (inputId === 'backgroundImage') { cachedBgCrop = null; cachedBgTemplateId = null; }
+
       if (input.files && input.files[0]) {
         const file = input.files[0];
         dropzone.classList.add('has-file');
         if (preview) {
           const reader = new FileReader();
           reader.onload = (e) => {
-            preview.innerHTML = `<img src="${e.target.result}" class="max-h-20 rounded-lg mx-auto mt-2" alt="Preview"><p class="text-xs text-gray-500 mt-1">${file.name}</p>`;
+            preview.innerHTML = `
+            <img src="${e.target.result}" class="max-h-20 rounded-lg mx-auto mt-2" alt="Preview">
+            <p class="text-xs text-gray-500 mt-1">${file.name}</p>
+            <button type="button" class="btn-crop mt-2 text-xs px-3 py-1 rounded-lg font-medium" style="background-color: var(--tea-green); color: var(--jet-black);">✂️ Recortar</button>
+          `;
             preview.classList.remove('hidden');
+
+            // Attach crop button handler
+            const cropBtn = preview.querySelector('.btn-crop');
+            cropBtn.addEventListener('click', async (evt) => {
+              evt.stopPropagation();
+              const dataUrl = e.target.result;
+              if (inputId === 'image') {
+                const cropped = await CropperHandler.openFree(dataUrl);
+                if (cropped) {
+                  cachedProfileCrop = cropped;
+                  cropBtn.textContent = '✅ Recortada';
+                  cropBtn.disabled = true;
+                }
+              } else if (inputId === 'backgroundImage') {
+                const templateId = document.getElementById('templateId').value;
+                const cropped = await CropperHandler.open(dataUrl, templateId);
+                if (cropped) {
+                  cachedBgCrop = cropped;
+                  cachedBgTemplateId = templateId;
+                  cropBtn.textContent = '✅ Recortado';
+                  cropBtn.disabled = true;
+                }
+              }
+            });
           };
           reader.readAsDataURL(file);
         }
