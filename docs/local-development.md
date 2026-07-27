@@ -2,60 +2,120 @@
 
 ## Requisitos previos
 
-- Node.js 18+ (recomendado 20)
-- npm
+- **Node.js 20+** (mínimo 18)
+- **npm**
 
-**No necesitas:** cuenta AWS, credenciales cloud, Docker, ni ningún servicio externo.
+No necesitas: cuenta AWS, credenciales cloud, Docker, ni ningún servicio externo para desarrollo básico.
 
 ## Setup
 
-```bash
-# Clonar e instalar
+```powershell
+# Clonar el repositorio
 git clone <repo-url>
 cd HackatonKiro
-cd lambda && npm install
 
-# Copiar configuración
+# Instalar dependencias del backend
+cd lambda
+npm install
+
+# Configurar entorno
 cd ..
-cp .env.example .env
+Copy-Item .env.example .env
 ```
+
+Edita `.env` si quieres habilitar IA real o image-tools (ver sección abajo).
 
 ## Arrancar el servidor
 
-```bash
+```powershell
+cd lambda
 npm run dev
 ```
 
-Esto levanta un servidor Express en `http://localhost:3000` que:
+Resultado:
+
+```
+🚀 Email Signature Generator - Dev Server
+   Mode:         local
+   AI Provider:  azure
+   Port:         3000
+
+   Frontend:     http://localhost:3000/
+   API Base:     http://localhost:3000/
+   Health:       http://localhost:3000/health
+   Storage:      http://localhost:3000/storage/
+```
+
+El servidor Express:
 - Expone los mismos endpoints que Lambda + API Gateway
-- Sirve los archivos frontend en la raíz `/`
-- Sirve las imágenes locales en `/storage/`
-- **No requiere AWS** — todo funciona con mocks locales
+- Sirve el frontend en la raíz `/`
+- Sirve imágenes generadas en `/storage/`
+- Acepta bodies de hasta 15MB (para imágenes base64)
 
 ## Qué funciona sin configuración extra
 
-| Feature | Funciona local | Notas |
-|---------|---------------|-------|
-| Frontend completo | ✅ | Formulario, preview, generación, copia HTML |
-| Preview de firma | ✅ | Muestra la imagen seleccionada como data URL |
+| Feature | Estado | Notas |
+|---------|--------|-------|
+| Frontend completo | ✅ | Formulario, preview, generación, copiar HTML |
+| Preview de firma | ✅ | Muestra imagen seleccionada como data URL |
 | Generación completa | ✅ | Imagen se guarda en `lambda/local-storage/` |
-| Listar plantillas | ✅ | |
-| Extracción IA (mock) | ✅ | Usa regex básico si no hay credenciales |
-| Extracción IA (real) | ⚠️ Necesita credenciales | Configurar Azure OpenAI en .env |
-| Image-tools (real) | ⚠️ Necesita servicio externo | Si `IMAGE_TOOLS_URL` está configurado, intenta usarlo; si falla, usa original como banner |
+| Listar plantillas | ✅ | 3 plantillas con metadata |
+| Variables de plantilla | ✅ | Endpoint por template |
+| Extracción IA (mock) | ✅ | Usa regex básico — funciona sin credenciales |
+| Panel admin | ✅ | Login + validador de templates |
+| Datos de ejemplo | ✅ | Botón para prueba rápida |
+| Recorte con Cropper.js | ✅ | Foto de perfil + fondo personalizado |
+| Extracción IA (real) | ⚠️ | Necesita credenciales Azure OpenAI en .env |
+| Image-tools (real) | ⚠️ | Necesita servicio externo corriendo + `IMAGE_TOOLS_URL` |
 
-## Usar IA real en local
+## Configurar IA real en local
 
-Si tienes credenciales de Azure OpenAI:
+Si tienes credenciales de Azure OpenAI, agrégalas a `.env`:
 
 ```env
 AI_PROVIDER=azure
 AZURE_OPENAI_ENDPOINT=https://tu-recurso.openai.azure.com
-AZURE_OPENAI_KEY=tu-api-key
+AZURE_OPENAI_KEY=tu-api-key-aqui
 AZURE_OPENAI_DEPLOYMENT=gpt-4o-mini
 ```
 
-Con esto, `/extract-fields` usará IA real para extraer campos del texto libre.
+Con esto, `POST /extract-fields` usará IA real para extraer campos del texto libre.
+
+## Configurar image-tools en local
+
+Si tienes el servicio image-tools corriendo (composición de persona sobre fondo):
+
+```env
+IMAGE_TOOLS_URL=http://localhost:3001/api/v1/image/image-process
+IMAGE_TOOLS_API_KEY=tu-api-key
+BACKGROUND_TEMPLATE_URL=https://tu-bucket.s3.amazonaws.com/backgrounds/template.png
+```
+
+Si `IMAGE_TOOLS_URL` está configurado pero el servicio no responde, el sistema automáticamente usa la imagen original como banner (fallback). La respuesta incluye `usedFallback: true` para que el frontend informe al usuario.
+
+## Generar password hash para admin
+
+El panel admin requiere un hash SHA-256 configurado en la variable `ADMIN_PASSWORD_HASH`:
+
+```powershell
+node scripts/generate-hash.js miPasswordSeguro123
+```
+
+Salida:
+
+```
+  Password:   miPasswordSeguro123
+  SHA-256:    a1b2c3d4e5f6...
+
+  Agrega esto a tu .env:
+  ADMIN_PASSWORD_HASH=a1b2c3d4e5f6...
+```
+
+Copia el hash generado a tu `.env`:
+
+```env
+ADMIN_PASSWORD_HASH=a1b2c3d4e5f6...
+```
 
 ## Estructura de archivos locales
 
@@ -65,83 +125,143 @@ Cuando generas una firma en modo local, las imágenes se guardan en:
 lambda/local-storage/
 ├── originals/        # Fotos originales subidas
 │   └── 1719000000-carlos_mendez.png
-└── banners/          # Banners procesados (copia del original en local)
-    └── 1719000000-carlos_mendez-banner.png
+├── banners/          # Banners procesados (o copia del original)
+│   └── 1719000000-carlos_mendez-banner.png
+└── backgrounds/      # Fondos personalizados subidos
+    └── 1719000000-carlos_mendez-bg.png
 ```
 
 Esta carpeta está en `.gitignore`. El dev server las sirve en `/storage/...`.
 
 ## Tests
 
-```bash
+```powershell
 cd lambda
-npm test            # Correr todos los tests (70 tests)
-npm run test:watch  # Modo watch para desarrollo
+
+# Correr todos los tests con coverage
+npm test
+
+# Modo watch para desarrollo
+npm run test:watch
 ```
 
-Los tests cubren:
-- **config.test.js** — Lectura de env vars, modo local/aws
-- **validation.test.js** — Validación de requests (campos requeridos, formatos)
-- **templateEngine.test.js** — Renderizado, variables, compatibilidad email
-- **storageService.test.js** — Upload local, generación de keys
-- **aiProvider.test.js** — Factory de providers
-- **handlers.test.js** — Estructura de respuestas exitosas y errores de todos los handlers
-- **previewSignature.test.js** — Preview usa placeholder banner sin procesamiento de imagen
+70 tests cubriendo:
 
-## Variables de entorno
+| Suite | Qué valida |
+|-------|-----------|
+| `config.test.js` | Lectura de env vars, modo local/aws |
+| `validation.test.js` | Validación de requests (campos requeridos, formatos, tamaños) |
+| `templateEngine.test.js` | Renderizado, variables, compatibilidad email |
+| `storageService.test.js` | Upload local, generación de keys |
+| `aiProvider.test.js` | Factory de providers |
+| `handlers.test.js` | Estructura de respuestas exitosas y errores |
+| `previewSignature.test.js` | Preview usa placeholder sin procesamiento |
 
-| Variable | Default | Descripción |
-|----------|---------|-------------|
-| `APP_MODE` | `local` | `local` = mocks, `aws` = servicios reales |
-| `PORT` | `3000` | Puerto del dev server |
-| `AI_PROVIDER` | `azure` | `azure` o `bedrock` |
-| `AZURE_OPENAI_ENDPOINT` | — | URL de tu recurso Azure OpenAI |
-| `AZURE_OPENAI_KEY` | — | API key de Azure OpenAI |
-| `AZURE_OPENAI_DEPLOYMENT` | `gpt-4o-mini` | Nombre del deployment |
-| `S3_BUCKET_NAME` | `signature-generator-assets` | Solo para modo aws |
-| `IMAGE_TOOLS_URL` | — | URL de image-tools externo |
-| `IMAGE_TOOLS_API_KEY` | — | API key para image-tools |
-| `BACKGROUND_TEMPLATE_URL` | — | URL del fondo para banners |
+## Probar endpoints con PowerShell
 
-## Probar con PowerShell
+### Health check
 
 ```powershell
-# Health check
 Invoke-RestMethod -Uri "http://localhost:3000/health"
+```
 
-# Listar plantillas
+### Listar plantillas
+
+```powershell
 Invoke-RestMethod -Uri "http://localhost:3000/templates"
+```
 
-# Preview
+### Variables de una plantilla
+
+```powershell
+Invoke-RestMethod -Uri "http://localhost:3000/templates/corporativa/variables"
+```
+
+### Preview de firma
+
+```powershell
 $body = @{
-  nombre = "Carlos Méndez"
-  cargo = "Tech Lead"
-  email = "carlos@empresa.com"
-  telefono = "+593991234567"
-  templateId = "corporativa"
+    nombre = "Carlos Méndez"
+    cargo = "Tech Lead"
+    email = "carlos@empresa.com"
+    telefono = "+593991234567"
+    website = "https://miempresa.com"
+    templateId = "corporativa"
 } | ConvertTo-Json
 
 Invoke-RestMethod -Uri "http://localhost:3000/preview-signature" -Method Post -Body $body -ContentType "application/json"
+```
 
-# Extracción de campos (mock)
-$body = @{ text = "Carlos Méndez, carlos@empresa.com, Tech Lead, +593991234567" } | ConvertTo-Json
+### Extracción de campos (mock o real según config)
+
+```powershell
+$body = @{
+    text = "Carlos Méndez, carlos@empresa.com, Tech Lead en TechCorp, +593991234567, https://miempresa.com"
+} | ConvertTo-Json
+
 Invoke-RestMethod -Uri "http://localhost:3000/extract-fields" -Method Post -Body $body -ContentType "application/json"
 ```
 
-## Probar con curl
+### Generación completa (con imagen base64)
+
+```powershell
+# Convertir una imagen a base64
+$imageBytes = [System.IO.File]::ReadAllBytes("C:\ruta\a\foto.png")
+$imageBase64 = [Convert]::ToBase64String($imageBytes)
+
+$body = @{
+    nombre = "Carlos Méndez"
+    cargo = "Tech Lead"
+    email = "carlos@empresa.com"
+    telefono = "+593991234567"
+    templateId = "corporativa"
+    image = $imageBase64
+    compositionParams = @{
+        scalePercent = 94
+        horizontalAlign = "center"
+        verticalAlign = "bottom"
+    }
+} | ConvertTo-Json -Depth 3
+
+Invoke-RestMethod -Uri "http://localhost:3000/generate-signature" -Method Post -Body $body -ContentType "application/json"
+```
+
+## Probar con curl (Git Bash / WSL)
 
 ```bash
+# Health check
+curl http://localhost:3000/health
+
 # Preview
 curl -X POST http://localhost:3000/preview-signature \
   -H "Content-Type: application/json" \
-  -d '{"nombre":"Carlos Méndez","cargo":"Tech Lead","email":"carlos@empresa.com","telefono":"+593","templateId":"minimalista"}'
+  -d '{"nombre":"Carlos Méndez","cargo":"Tech Lead","email":"carlos@empresa.com","telefono":"+593991234567","templateId":"minimalista"}'
 
-# Extracción
+# Extracción de campos
 curl -X POST http://localhost:3000/extract-fields \
   -H "Content-Type: application/json" \
-  -d '{"text":"Carlos Méndez, carlos@empresa.com, Tech Lead"}'
+  -d '{"text":"Carlos Méndez, carlos@empresa.com, Tech Lead, +593991234567"}'
 ```
 
-## Siguiente paso: Admin Panel
+## Probar el panel admin
 
-El frontend principal está completamente funcional en `http://localhost:3000/`. El admin panel (`admin.html`) implementará el validador de templates (Task 8).
+1. Genera un hash: `node scripts/generate-hash.js tuPassword`
+2. Agrega `ADMIN_PASSWORD_HASH=<hash>` a `.env`
+3. Reinicia el servidor
+4. Navega a `http://localhost:3000/admin.html`
+5. Ingresa tu password → accede al validador de templates
+
+El validador ejecuta 8 reglas sobre el HTML de un template:
+- **4 errores:** style blocks, scripts, external images, variables requeridas faltantes
+- **4 warnings:** ancho excesivo, tablas anidadas profundas, media queries, links sin protocolo
+
+## Troubleshooting
+
+| Problema | Solución |
+|----------|----------|
+| `Cannot find module` | Ejecuta `cd lambda && npm install` |
+| Puerto 3000 ocupado | Cambia `PORT=3001` en `.env` |
+| AI extraction retorna mock | Configura `AZURE_OPENAI_ENDPOINT` y `AZURE_OPENAI_KEY` en `.env` |
+| Imagen no se genera | Verifica que `lambda/local-storage/` existe (se crea automáticamente) |
+| Admin no permite login | Verifica que `ADMIN_PASSWORD_HASH` está en `.env` y reinicia el server |
+| image-tools falla | Normal en local — el sistema usa fallback automático |
