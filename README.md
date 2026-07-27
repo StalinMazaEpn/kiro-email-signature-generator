@@ -109,36 +109,133 @@ node scripts/generate-hash.js miPasswordSeguro123
 
 ## Deployment (AWS SAM)
 
-### Pre-requisitos
+### Requisitos previos
 
-- AWS CLI configurado
-- AWS SAM CLI (`pip install aws-sam-cli`)
-- Node.js 20.x
+1. **Cuenta AWS** — Free Tier es suficiente para pruebas (Lambda: 1M invocaciones/mes gratis, S3: 5GB gratis, API Gateway: 1M llamadas/mes gratis)
+2. **AWS CLI** instalado y configurado con credenciales:
+   ```bash
+   aws configure
+   # Access Key ID: tu-access-key
+   # Secret Access Key: tu-secret-key
+   # Region: us-east-1
+   # Output: json
+   ```
+3. **AWS SAM CLI** instalado:
+   ```bash
+   pip install aws-sam-cli
+   ```
+4. **Node.js 20.x** (para el build)
 
-### Comandos
+### Parámetros que debes configurar
+
+Al hacer `sam deploy --guided` te pedirá estos valores:
+
+| Parámetro | Qué poner | Ejemplo |
+|-----------|-----------|---------|
+| Stack Name | Nombre del stack en CloudFormation | `email-signature-generator` |
+| Region | Región AWS donde desplegar | `us-east-1` |
+| `ImageToolsUrl` | URL de tu servicio image-tools | `https://tu-api.com/api/v1/image/process` |
+| `ImageToolsApiKey` | API key del servicio image-tools | `tu-api-key-secreto` |
+| `BackgroundTemplateUrl` | URL pública del fondo por defecto | `https://tu-bucket.s3.amazonaws.com/bg.png` |
+| `AIProvider` | Proveedor IA: `azure` o `bedrock` | `bedrock` (recomendado en AWS) |
+| `AzureOpenAIEndpoint` | (Si usas Azure) Endpoint del recurso | `https://tu-recurso.openai.azure.com` |
+| `AzureOpenAIKey` | (Si usas Azure) API key | `tu-azure-key` |
+| `AzureOpenAIDeployment` | (Si usas Azure) Nombre del deployment | `gpt-4o-mini` |
+| `AdminPasswordHash` | Hash SHA-256 del password admin | Genera con: `node scripts/generate-hash.js` |
+
+> **Tip**: Si no tienes image-tools, puedes dejarlo vacío. La app funcionará sin procesamiento de imagen (usará la foto original como banner).
+
+> **Tip**: Si usas Bedrock, solo necesitas que tu cuenta AWS tenga acceso al modelo habilitado en la región seleccionada (no requiere keys adicionales).
+
+### Paso a paso del despliegue
 
 ```bash
-# Build
+# 1. Build del proyecto (empaqueta Lambda + dependencias)
 sam build
 
-# Deploy (primera vez — interactivo)
+# 2. Deploy interactivo (primera vez)
 sam deploy --guided
+# Te preguntará cada parámetro. Responde según la tabla de arriba.
+# Al final genera samconfig.toml para futuros deploys.
 
-# Deploy (posteriores — usa samconfig.toml)
-sam deploy
+# 3. Anotar los outputs (los necesitas para el frontend)
+# ApiUrl:          https://xxxxx.execute-api.us-east-1.amazonaws.com
+# FrontendUrl:     http://xxxxx.s3-website-us-east-1.amazonaws.com
+# AssetsBucketName: email-signature-generator-assetsbucket-xxxxx
 
-# Subir frontend al bucket S3
+# 4. Actualizar la URL de API en el frontend (si es necesario)
+# El frontend usa window.location.origin como base URL.
+# En producción con S3 static website, debes configurar la URL de API.
+# Opción simple: agregar un archivo frontend/js/config-prod.js con la API URL.
+
+# 5. Subir el frontend al bucket S3
+aws s3 sync frontend/ s3://<FrontendBucketName>/ --delete
+
+# 6. Verificar que funciona
+# Abre la FrontendUrl en tu navegador
+```
+
+### Deploys posteriores
+
+```bash
+# Solo si cambiaste código Lambda o template.yaml:
+sam build && sam deploy
+
+# Solo si cambiaste archivos del frontend:
 aws s3 sync frontend/ s3://<FrontendBucketName>/ --delete
 ```
 
-### Recursos creados por SAM
+### Costos estimados (Free Tier)
 
-- **SignatureApi** — HTTP API Gateway con CORS
-- **GenerateSignatureFunction** — Lambda para generar firma completa
-- **PreviewSignatureFunction** — Lambda para preview rápido
-- **ExtractFieldsFunction** — Lambda para extracción IA
-- **AssetsBucket** — S3 público para imágenes (originals + banners + backgrounds)
-- **FrontendBucket** — S3 static website para el frontend
+| Servicio | Free Tier incluye | Uso típico de este proyecto |
+|----------|-------------------|-----------------------------|
+| Lambda | 1M invocaciones + 400K GB-s/mes | ~100 firmas = ~100 invocaciones |
+| API Gateway | 1M llamadas/mes | ~300 llamadas (preview + generate + extract) |
+| S3 | 5GB storage + 20K GET/mes | ~50MB en imágenes |
+| **Total** | — | **$0.00** dentro de Free Tier |
+
+> Para una demo o hackathon, no generarás costos siempre que estés dentro del primer año de Free Tier.
+
+### 🧹 Limpieza de recursos (IMPORTANTE)
+
+**Después de presentar, elimina todos los recursos para evitar costos:**
+
+```bash
+# 1. Vaciar los buckets S3 (CloudFormation no puede eliminar buckets con contenido)
+aws s3 rm s3://<AssetsBucketName> --recursive
+aws s3 rm s3://<FrontendBucketName> --recursive
+
+# 2. Eliminar el stack completo de CloudFormation
+sam delete
+# o equivalente:
+aws cloudformation delete-stack --stack-name email-signature-generator
+
+# 3. Verificar que se eliminó
+aws cloudformation describe-stacks --stack-name email-signature-generator
+# Debería retornar error "Stack does not exist"
+```
+
+**¿Qué se elimina con `sam delete`?**
+
+| Recurso | Se elimina |
+|---------|-----------|
+| 3 Lambda functions | ✅ Sí |
+| API Gateway | ✅ Sí |
+| S3 Assets Bucket | ✅ Sí (si está vacío) |
+| S3 Frontend Bucket | ✅ Sí (si está vacío) |
+| IAM Roles | ✅ Sí |
+| CloudWatch Logs | ⚠️ Se mantienen 30 días (sin costo relevante) |
+
+**Limpieza manual de logs (opcional):**
+
+```bash
+# Eliminar grupos de logs de las funciones Lambda
+aws logs delete-log-group --log-group-name /aws/lambda/email-signature-generator-GenerateSignatureFunction-xxxxx
+aws logs delete-log-group --log-group-name /aws/lambda/email-signature-generator-PreviewSignatureFunction-xxxxx
+aws logs delete-log-group --log-group-name /aws/lambda/email-signature-generator-ExtractFieldsFunction-xxxxx
+```
+
+> **Resumen**: Ejecuta `sam delete` y todo se limpia. Solo necesitas vaciar los buckets S3 primero.
 
 ## Tests
 
