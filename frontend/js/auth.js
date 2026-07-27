@@ -7,8 +7,8 @@
 const Auth = (() => {
   const SESSION_KEY = 'admin_authenticated';
 
-  // Default hash for development (password: "admin123")
-  // In production, set ADMIN_PASSWORD_HASH env var and inject it into the page
+  // Default dev hash. Generate your own with: node scripts/generate-hash.js <your-password>
+  // In production, inject via window.ADMIN_CONFIG.passwordHash
   const DEFAULT_HASH = '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9';
 
   /**
