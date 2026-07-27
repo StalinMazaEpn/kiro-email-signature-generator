@@ -55,17 +55,24 @@
 
   /**
    * Returns image composition parameters based on the selected mode.
+   * Always includes target output dimensions for the selected template.
    * @returns {object}
    */
   function getCompositionParams() {
     const mode = document.querySelector('input[name="compositionMode"]:checked').value;
+    const templateId = document.getElementById('templateId').value;
+    const templateConfig = FieldConfig.getTemplateImageConfig(templateId);
+
+    let params;
     switch (mode) {
       case 'centered':
-        return { scalePercent: 100, horizontalAlign: 'center', verticalAlign: 'center', paddingPercent: 0 };
+        params = { scalePercent: 100, horizontalAlign: 'center', verticalAlign: 'center', paddingPercent: 0 };
+        break;
       case 'bottom':
-        return { scalePercent: 80, horizontalAlign: 'center', verticalAlign: 'bottom', paddingPercent: 0 };
+        params = { scalePercent: 80, horizontalAlign: 'center', verticalAlign: 'bottom', paddingPercent: 0 };
+        break;
       case 'advanced':
-        return {
+        params = {
           scalePercent: parseInt(document.getElementById('scalePercent').value, 10),
           paddingPercent: parseInt(document.getElementById('paddingPercent').value, 10),
           horizontalAlign: document.getElementById('horizontalAlign').value,
@@ -73,9 +80,16 @@
           offsetX: parseInt(document.getElementById('offsetX').value, 10) || 0,
           offsetY: parseInt(document.getElementById('offsetY').value, 10) || 0,
         };
+        break;
       default:
-        return { scalePercent: 100, horizontalAlign: 'center', verticalAlign: 'center', paddingPercent: 0 };
+        params = { scalePercent: 100, horizontalAlign: 'center', verticalAlign: 'center', paddingPercent: 0 };
     }
+
+    // Always include target output dimensions for the selected template
+    params.outputWidth = templateConfig.width * 2; // 2x for retina
+    params.outputHeight = templateConfig.height * 2;
+
+    return params;
   }
 
   // --- AI Extraction ---
@@ -255,6 +269,15 @@
       }
 
       generatedHtml = result.html;
+
+      // Show which template was used
+      const templateSelect = document.getElementById('templateId');
+      const templateName = templateSelect.options[templateSelect.selectedIndex].text;
+      const templateBadge = document.getElementById('output-template-badge');
+      if (templateBadge) {
+        templateBadge.textContent = `Plantilla: ${templateName}`;
+      }
+
       Preview.showOutput(result.html);
       if (result.usedFallback) {
         showStatusHtml(formStatus, 
