@@ -68,13 +68,20 @@ app.post('/generate-signature', async (req, res) => {
     }
 
     // Process banner (in local mode, uses the original as fallback)
-    const bannerUrl = await createBanner(originalUrl, nombre, imageBuffer, compositionParams || {}, customBackgroundUrl);
+    const bannerResult = await createBanner(originalUrl, nombre, imageBuffer, compositionParams || {}, customBackgroundUrl);
+    const bannerUrl = bannerResult.url;
 
     // Render template
     const fields = { nombre, cargo, email, telefono, website, linkedin, bannerUrl };
     const html = render(templateId, fields);
 
-    res.json({ success: true, html, bannerUrl });
+    res.json({ 
+      success: true, 
+      html, 
+      bannerUrl,
+      usedFallback: bannerResult.usedFallback || false,
+      fallbackReason: bannerResult.fallbackReason || null
+    });
   } catch (err) {
     console.error('[generate-signature] Error:', err.message);
     res.status(500).json({ success: false, error: err.message });

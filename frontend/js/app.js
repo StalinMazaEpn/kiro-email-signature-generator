@@ -28,9 +28,20 @@
   // --- Composition Mode ---
   const compositionRadios = document.querySelectorAll('input[name="compositionMode"]');
   const advancedParamsDiv = document.getElementById('advanced-params');
+  const compositionCards = document.querySelectorAll('.composition-card');
+
+  function updateCompositionVisual() {
+    compositionCards.forEach(card => card.classList.remove('active'));
+    const checked = document.querySelector('input[name="compositionMode"]:checked');
+    if (checked) {
+      const card = checked.closest('label').querySelector('.composition-card');
+      if (card) card.classList.add('active');
+    }
+  }
 
   compositionRadios.forEach(radio => {
     radio.addEventListener('change', () => {
+      updateCompositionVisual();
       if (radio.value === 'advanced') {
         advancedParamsDiv.classList.remove('hidden');
       } else {
@@ -38,6 +49,9 @@
       }
     });
   });
+
+  // Set initial active state
+  updateCompositionVisual();
 
   /**
    * Returns image composition parameters based on the selected mode.
@@ -230,7 +244,15 @@
 
       generatedHtml = result.html;
       Preview.showOutput(result.html);
-      showStatus(formStatus, 'Firma generada exitosamente.', 'success');
+      if (result.usedFallback) {
+        showStatusHtml(formStatus, 
+          '<span class="block">⚠️ El servicio de procesamiento de imagen no está disponible.</span>' +
+          '<span class="block text-xs mt-1">Se usó la foto original sin aplicar el fondo. Verifica que el servicio image-tools esté activo.</span>',
+          'warning'
+        );
+      } else {
+        showStatus(formStatus, 'Firma generada exitosamente.', 'success');
+      }
     } catch (err) {
       showStatus(formStatus, `Error de conexion: ${err.message}`, 'error');
     } finally {
@@ -309,10 +331,11 @@
    */
   function validateImageFile(file, label) {
     if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
-      return `${label}: formato no soportado (${file.type}). Usa PNG, JPG o WebP.`;
+      return `${label}: el formato "${file.type || 'desconocido'}" no es compatible. Solo se aceptan imágenes PNG, JPG o WebP.`;
     }
     if (file.size > MAX_IMAGE_SIZE) {
-      return `${label} es muy pesada (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximo 15MB. Usa una mas liviana.`;
+      const sizeMB = (file.size / 1024 / 1024).toFixed(1);
+      return `${label} pesa ${sizeMB}MB y el máximo es 15MB. Reduce el tamaño de la imagen antes de subirla.`;
     }
     return null;
   }

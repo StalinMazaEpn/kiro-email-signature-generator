@@ -14,7 +14,7 @@ jest.mock('../../src/services/storageService', () => ({
 }));
 
 jest.mock('../../src/services/imageToolsClient', () => ({
-  createBanner: jest.fn().mockResolvedValue('http://localhost:3000/storage/banners/test-banner.png'),
+  createBanner: jest.fn().mockResolvedValue({ url: 'http://localhost:3000/storage/banners/test-banner.png', usedFallback: false }),
 }));
 
 jest.mock('../../src/providers/aiProvider', () => ({

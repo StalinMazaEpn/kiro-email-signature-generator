@@ -39,13 +39,20 @@ async function handler(event) {
     }
 
     // Process banner via image-tools (or local mock)
-    const bannerUrl = await createBanner(originalUrl, nombre, imageBuffer, compositionParams || {}, customBackgroundUrl);
+    const bannerResult = await createBanner(originalUrl, nombre, imageBuffer, compositionParams || {}, customBackgroundUrl);
+    const bannerUrl = bannerResult.url;
 
     // Render template with all fields
     const fields = { nombre, cargo, email, telefono, website, linkedin, bannerUrl };
     const html = render(templateId, fields);
 
-    return response(200, { success: true, html, bannerUrl });
+    return response(200, { 
+      success: true, 
+      html, 
+      bannerUrl,
+      usedFallback: bannerResult.usedFallback || false,
+      fallbackReason: bannerResult.fallbackReason || null
+    });
   } catch (err) {
     console.error('[generateSignature] Error:', err.message);
     return response(500, { success: false, error: err.message });

@@ -21,15 +21,19 @@ async function createBanner(sourceImageUrl, nombre, originalImageBuffer = null, 
     // If IMAGE_TOOLS_URL is configured, try the real service even in local mode
     if (config.imageToolsUrl && (config.backgroundTemplateUrl || customBackgroundUrl)) {
       try {
-        return await createBannerRemote(sourceImageUrl, nombre, compositionParams, customBackgroundUrl);
+        const url = await createBannerRemote(sourceImageUrl, nombre, compositionParams, customBackgroundUrl);
+        return { url, usedFallback: false };
       } catch (err) {
         console.warn('[imageToolsClient] Remote service failed, falling back to local copy:', err.message);
-        return createBannerLocal(sourceImageUrl, nombre, originalImageBuffer);
+        const url = await createBannerLocal(sourceImageUrl, nombre, originalImageBuffer);
+        return { url, usedFallback: true, fallbackReason: err.message };
       }
     }
-    return createBannerLocal(sourceImageUrl, nombre, originalImageBuffer);
+    const url = await createBannerLocal(sourceImageUrl, nombre, originalImageBuffer);
+    return { url, usedFallback: true, fallbackReason: 'IMAGE_TOOLS_URL not configured' };
   }
-  return createBannerRemote(sourceImageUrl, nombre, compositionParams, customBackgroundUrl);
+  const url = await createBannerRemote(sourceImageUrl, nombre, compositionParams, customBackgroundUrl);
+  return { url, usedFallback: false };
 }
 
 /**

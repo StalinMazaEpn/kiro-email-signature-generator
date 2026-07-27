@@ -1,30 +1,38 @@
 <!-- Email Signature: Minimalista -->
-<!-- Single row: avatar + name | cargo | contact inline, ultra compact -->
-<table cellpadding="0" cellspacing="0" border="0" style="width:480px;font-family:Arial,Helvetica,sans-serif;color:#333333;border-collapse:collapse;">
+<!-- Compact single row: circular avatar + contact data inline -->
+<table cellpadding="0" cellspacing="0" border="0" style="width: 480px; font-family: Arial, Helvetica, sans-serif; color: #1f363d; border-collapse: collapse;">
   <tr>
-    <td style="vertical-align:middle;width:80px;padding:0;">
-      <img src="{{{bannerUrl}}}" width="80" height="80" alt="{{nombre}}" style="display:block;border:0;width:80px;height:80px;border-radius:40px;object-fit:cover;" />
+    <!-- Avatar -->
+    <td style="vertical-align: middle; width: 60px; padding: 0;">
+      <img src="{{{bannerUrl}}}" alt="{{nombre}}" width="56" height="56" style="display: block; width: 56px; height: 56px; border-radius: 50%; object-fit: cover; border: 2px solid #70a9a1;" />
     </td>
-    <td style="vertical-align:middle;padding:0 0 0 14px;">
-      <table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+
+    <!-- Separator dot -->
+    <td style="width: 16px; text-align: center; vertical-align: middle;">
+      <div style="width: 4px; height: 4px; background-color: #9ec1a3; border-radius: 50%; margin: 0 auto;"></div>
+    </td>
+
+    <!-- Info -->
+    <td style="vertical-align: middle; padding: 0;">
+      <table cellpadding="0" cellspacing="0" border="0" style="border-collapse: collapse;">
         <tr>
-          <td style="padding:0 0 2px 0;">
-            <strong style="font-size:14px;color:#111827;">{{nombre}}</strong>
-            <span style="font-size:12px;color:#6b7280;"> &mdash; {{cargo}}</span>
+          <td style="padding: 0 0 1px 0;">
+            <strong style="font-size: 14px; color: #1f363d;">{{nombre}}</strong>
+            <span style="font-size: 12px; color: #40798c; font-weight: 600;"> · {{cargo}}</span>
           </td>
         </tr>
         <tr>
-          <td style="padding:2px 0 0 0;">
-            <a href="mailto:{{email}}" style="font-size:12px;color:#2563eb;text-decoration:none;">{{email}}</a>
-            <span style="font-size:12px;color:#9ca3af;"> &bull; </span>
-            <span style="font-size:12px;color:#333333;">{{telefono}}</span>
+          <td style="padding: 1px 0 0 0; font-size: 11px; line-height: 18px;">
+            <a href="mailto:{{email}}" style="color: #40798c; text-decoration: none;">{{email}}</a>
+            <span style="color: #9ec1a3;"> · </span>
+            <span style="color: #1f363d;">{{telefono}}</span>
             {{#website}}
-            <span style="font-size:12px;color:#9ca3af;"> &bull; </span>
-            <a href="{{{website}}}" style="font-size:12px;color:#2563eb;text-decoration:none;">Web</a>
+            <span style="color: #9ec1a3;"> · </span>
+            <a href="{{{website}}}" style="color: #40798c; text-decoration: none;">Web</a>
             {{/website}}
             {{#linkedin}}
-            <span style="font-size:12px;color:#9ca3af;"> &bull; </span>
-            <a href="{{{linkedin}}}" style="font-size:12px;color:#2563eb;text-decoration:none;">LinkedIn</a>
+            <span style="color: #9ec1a3;"> · </span>
+            <a href="{{{linkedin}}}" style="color: #40798c; text-decoration: none;">in</a>
             {{/linkedin}}
           </td>
         </tr>

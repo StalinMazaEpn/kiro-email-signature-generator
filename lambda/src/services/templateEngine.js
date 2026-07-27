@@ -54,7 +54,7 @@ function render(templateId, fields) {
 function getTemplateList() {
   return [
     { id: 'corporativa', name: 'Corporativa', description: 'Layout de 2 columnas: imagen izquierda, datos derecha. Paleta neutra gris/azul.' },
-    { id: 'moderna-banner', name: 'Moderna con Banner', description: 'Banner horizontal arriba, datos centrados abajo con iconos de contacto.' },
+    { id: 'moderna-banner', name: 'Moderna con Banner', description: 'Layout de 2 columnas: foto con degradado izquierda, datos derecha con iconos sociales.' },
     { id: 'minimalista', name: 'Minimalista', description: 'Una fila compacta: avatar circular + nombre, cargo y contacto inline.' },
   ];
 }
