@@ -223,14 +223,15 @@
       return;
     }
 
-    // Get image as base64
-    const imageBase64 = await fileToBase64(profileFile);
-    if (!imageBase64) {
-      showStatus(formStatus, 'Selecciona una imagen de perfil.', 'error');
+    // Open cropper for profile photo (free crop)
+    const profileDataUrl = await fileToDataUrl(profileFile);
+    const croppedProfileBase64 = await CropperHandler.openFree(profileDataUrl);
+    if (!croppedProfileBase64) {
+      showStatus(formStatus, 'Recorte de foto cancelado.', 'warning');
       return;
     }
 
-    data.image = imageBase64;
+    data.image = croppedProfileBase64;
     data.compositionParams = getCompositionParams();
 
     // Check for optional custom background image — open cropper for correct dimensions

@@ -58,6 +58,39 @@ const CropperHandler = (() => {
   }
 
   /**
+   * Open the cropper in free mode (no aspect ratio constraint).
+   * Used for profile photo cropping.
+   * @param {string} imageDataUrl - Data URL of the image
+   * @returns {Promise<string|null>} Cropped base64 or null if cancelled
+   */
+  function openFree(imageDataUrl) {
+    dimensionsLabel.textContent = 'Recorte libre — ajusta como prefieras';
+    hintLabel.textContent = 'Recorta tu foto de perfil. Se enviará tal como la dejes.';
+
+    cropperImage.src = imageDataUrl;
+    modal.classList.remove('hidden');
+
+    return new Promise((resolve) => {
+      resolvePromise = resolve;
+      cropperImage.onload = () => {
+        if (cropper) cropper.destroy();
+        cropper = new Cropper(cropperImage, {
+          aspectRatio: NaN, // free crop
+          viewMode: 1,
+          dragMode: 'move',
+          autoCropArea: 0.9,
+          responsive: true,
+          restore: false,
+          guides: true,
+          center: true,
+          highlight: true,
+          background: true,
+        });
+      };
+    });
+  }
+
+  /**
    * Close the modal and clean up.
    */
   function close(result) {
@@ -80,13 +113,27 @@ const CropperHandler = (() => {
     const templateId = document.getElementById('templateId').value;
     const config = FieldConfig.getTemplateImageConfig(templateId);
 
-    const canvas = cropper.getCroppedCanvas({
-      width: config.width * 2, // 2x for retina
-      height: config.height * 2,
-      imageSmoothingEnabled: true,
-      imageSmoothingQuality: 'high',
-    });
+    // For free crop (profile photo), use natural dimensions capped at 600px
+    let canvasOpts;
+    if (hintLabel.textContent.includes('foto de perfil')) {
+      // Free crop: use cropped area at max 600px wide
+      canvasOpts = {
+        maxWidth: 600,
+        maxHeight: 600,
+        imageSmoothingEnabled: true,
+        imageSmoothingQuality: 'high',
+      };
+    } else {
+      // Template crop: use exact template dimensions
+      canvasOpts = {
+        width: config.width * 2,
+        height: config.height * 2,
+        imageSmoothingEnabled: true,
+        imageSmoothingQuality: 'high',
+      };
+    }
 
+    const canvas = cropper.getCroppedCanvas(canvasOpts);
     const croppedDataUrl = canvas.toDataURL('image/png');
     const base64 = croppedDataUrl.split(',')[1];
     close(base64);
@@ -104,5 +151,5 @@ const CropperHandler = (() => {
     }
   });
 
-  return { open, close };
+  return { open, openFree, close };
 })();
