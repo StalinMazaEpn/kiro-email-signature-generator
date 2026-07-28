@@ -16,24 +16,24 @@ const { upload, getBannerKey } = require('./storageService');
  * @returns {Promise<string>} Public URL of the processed banner
  */
 async function createBanner(sourceImageUrl, nombre, originalImageBuffer = null, compositionParams = {}, customBackgroundUrl = null) {
-  if (isLocalMode()) {
-    const config = getConfig();
-    // If IMAGE_TOOLS_URL is configured, try the real service even in local mode
-    if (config.imageToolsUrl && (config.backgroundTemplateUrl || customBackgroundUrl)) {
-      try {
-        const url = await createBannerRemote(sourceImageUrl, nombre, compositionParams, customBackgroundUrl);
-        return { url, usedFallback: false };
-      } catch (err) {
-        console.warn('[imageToolsClient] Remote service failed, falling back to local copy:', err.message);
-        const url = await createBannerLocal(sourceImageUrl, nombre, originalImageBuffer);
-        return { url, usedFallback: true, fallbackReason: err.message };
-      }
+  const config = getConfig();
+
+  // Try remote image-tools if URL is configured
+  if (config.imageToolsUrl && (config.backgroundTemplateUrl || customBackgroundUrl)) {
+    try {
+      const url = await createBannerRemote(sourceImageUrl, nombre, compositionParams, customBackgroundUrl);
+      return { url, usedFallback: false };
+    } catch (err) {
+      console.warn('[imageToolsClient] Remote service failed, falling back to local copy:', err.message);
+      // Fallback: use original image as banner (works in both local and aws modes)
+      const url = await createBannerLocal(sourceImageUrl, nombre, originalImageBuffer);
+      return { url, usedFallback: true, fallbackReason: err.message };
     }
-    const url = await createBannerLocal(sourceImageUrl, nombre, originalImageBuffer);
-    return { url, usedFallback: true, fallbackReason: 'IMAGE_TOOLS_URL not configured' };
   }
-  const url = await createBannerRemote(sourceImageUrl, nombre, compositionParams, customBackgroundUrl);
-  return { url, usedFallback: false };
+
+  // No image-tools configured: use fallback
+  const url = await createBannerLocal(sourceImageUrl, nombre, originalImageBuffer);
+  return { url, usedFallback: true, fallbackReason: 'IMAGE_TOOLS_URL not configured' };
 }
 
 /**

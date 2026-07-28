@@ -58,6 +58,10 @@ Parameters:
     Description: SHA-256 hash of the admin panel password
     Default: ''
     NoEcho: true
+  BudgetAlertEmail:
+    Type: String
+    Description: Email to receive budget alerts
+    Default: ''
 
 Resources:
   # API Gateway
@@ -167,6 +171,26 @@ Resources:
             Principal: "*"
             Action: s3:GetObject
             Resource: !Sub "${FrontendBucket.Arn}/*"
+
+  # Budget alarm - $1 USD limit
+  DemoBudget:
+    Type: AWS::Budgets::Budget
+    Properties:
+      Budget:
+        BudgetName: email-signature-demo-budget
+        BudgetLimit:
+          Amount: 1
+          Unit: USD
+        TimeUnit: MONTHLY
+        BudgetType: COST
+      NotificationsWithSubscribers:
+        - Notification:
+            NotificationType: ACTUAL
+            ComparisonOperator: GREATER_THAN
+            Threshold: 80
+          Subscribers:
+            - SubscriptionType: EMAIL
+              Address: !Ref BudgetAlertEmail
 
 Outputs:
   ApiUrl:

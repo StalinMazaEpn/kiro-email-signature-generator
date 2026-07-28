@@ -10,7 +10,7 @@ const TEMPLATES = {
   minimalista: 'minimalista.mustache',
 };
 
-const TEMPLATES_DIR = path.join(__dirname, '../../../templates');
+const TEMPLATES_DIR = path.join(__dirname, '../../templates');
 
 /**
  * Load raw template string by ID.

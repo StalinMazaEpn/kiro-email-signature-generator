@@ -1,0 +1,13 @@
+version = 0.1
+
+[default.deploy.parameters]
+stack_name = "email-signature-generator"
+resolve_s3 = true
+s3_prefix = "email-signature-generator"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "ImageToolsUrl=\"\" BackgroundTemplateUrl=\"\" AIProvider=\"bedrock\" AzureOpenAIEndpoint=\"\" AzureOpenAIDeployment=\"gpt-4o-mini\" BudgetAlertEmail=\"tu-email@example.com\""
+image_repositories = []
+
+[default.global.parameters]
+region = "us-east-1"

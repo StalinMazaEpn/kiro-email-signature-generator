@@ -5,9 +5,9 @@
  * Automatically resolves base URL based on current host.
  */
 const API = (() => {
-  // In production, API Gateway URL would be set here.
+  // In production, set window.API_BASE_URL via config.js (generated at deploy time).
   // In local dev, the dev-server serves both frontend and API on the same origin.
-  const BASE_URL = window.location.origin;
+  const BASE_URL = window.API_BASE_URL || window.location.origin;
 
   /**
    * Generate a full email signature (with image processing).
