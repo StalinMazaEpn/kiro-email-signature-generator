@@ -23,11 +23,11 @@ Write-Host "`n=== Email Signature Generator - AWS Deployment ===" -ForegroundCol
 # Step 1: Build and deploy backend (SAM)
 if (-not $SkipBackend -and -not $FrontendOnly) {
     Write-Host "`n[1/4] Building SAM application..." -ForegroundColor Yellow
-    sam build
+    sam build --template-file template_aws.yml
     if ($LASTEXITCODE -ne 0) { throw "SAM build failed" }
 
     Write-Host "`n[2/4] Deploying SAM stack..." -ForegroundColor Yellow
-    sam deploy --stack-name $StackName --region $Region --resolve-s3 --capabilities CAPABILITY_IAM --no-confirm-changeset
+    sam deploy --template-file template_aws.yml --stack-name $StackName --region $Region --resolve-s3 --capabilities CAPABILITY_IAM --no-confirm-changeset
     if ($LASTEXITCODE -ne 0) { throw "SAM deploy failed" }
 }
 

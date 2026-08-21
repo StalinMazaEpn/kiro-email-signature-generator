@@ -89,6 +89,7 @@
                 <label for="email" class="block text-sm font-medium mb-1" style="color: var(--jet-black);">Email *</label>
                 <input type="email" id="email" name="email" required
                   class="w-full border rounded-xl px-3 py-2 text-sm" style="border-color: rgba(158,193,163,0.3);">
+                <p id="email-error" class="field-error text-xs mt-1 hidden"></p>
               </div>
               <div>
                 <label for="telefono" class="block text-sm font-medium mb-1" style="color: var(--jet-black);">Teléfono *</label>
@@ -103,12 +104,14 @@
                 <input type="url" id="website" name="website"
                   class="w-full border rounded-xl px-3 py-2 text-sm" style="border-color: rgba(158,193,163,0.3);"
                   placeholder="https://...">
+                <p id="website-error" class="field-error text-xs mt-1 hidden"></p>
               </div>
               <div>
                 <label for="linkedin" class="block text-sm font-medium mb-1" style="color: var(--jet-black);">LinkedIn</label>
                 <input type="url" id="linkedin" name="linkedin"
                   class="w-full border rounded-xl px-3 py-2 text-sm" style="border-color: rgba(158,193,163,0.3);"
                   placeholder="https://linkedin.com/in/...">
+                <p id="linkedin-error" class="field-error text-xs mt-1 hidden"></p>
               </div>
             </div>
 
@@ -140,6 +143,8 @@
                 </div>
                 <div id="dropzone-image-preview" class="hidden"></div>
               </div>
+                <p class="text-xs italic mt-2" style="color: #8a97a0;">La imagen que ves aquí es solo una <strong>previsualización</strong>, no el resultado final. La versión definitiva se genera al pulsar <strong>«Generar firma»</strong>, aplicando ya el fondo y la composición seleccionados.</p>
+
 
               <!-- Background image dropzone -->
               <div class="dropzone" id="dropzone-background">
@@ -164,7 +169,10 @@
                 <label class="cursor-pointer">
                   <input type="radio" name="compositionMode" value="centered" checked class="peer hidden">
                   <div class="composition-card peer-checked:active">
-                    <span class="text-2xl block mb-1">🎯</span>
+                    <svg class="w-9 h-11 mx-auto mb-1 block" viewBox="0 0 40 48" fill="none" aria-hidden="true">
+                      <rect x="1.5" y="1.5" width="37" height="45" rx="4" stroke="#9ec1a3" stroke-width="1.5"/>
+                      <rect x="12" y="15" width="16" height="18" rx="3" fill="#40798c"/>
+                    </svg>
                     <span class="text-sm font-medium block" style="color: var(--jet-black);">Centrado</span>
                     <span class="text-xs text-gray-500">100% centro-centro</span>
                   </div>
@@ -173,7 +181,10 @@
                 <label class="cursor-pointer">
                   <input type="radio" name="compositionMode" value="bottom" class="peer hidden">
                   <div class="composition-card peer-checked:active">
-                    <span class="text-2xl block mb-1">⬇️</span>
+                    <svg class="w-9 h-11 mx-auto mb-1 block" viewBox="0 0 40 48" fill="none" aria-hidden="true">
+                      <rect x="1.5" y="1.5" width="37" height="45" rx="4" stroke="#9ec1a3" stroke-width="1.5"/>
+                      <rect x="14" y="30" width="12" height="12" rx="3" fill="#40798c"/>
+                    </svg>
                     <span class="text-sm font-medium block" style="color: var(--jet-black);">Inferior</span>
                     <span class="text-xs text-gray-500">80% centro-abajo</span>
                   </div>
@@ -265,6 +276,21 @@
 
       <!-- Right Column: Preview + Output (STICKY) -->
       <div class="space-y-6 lg:sticky lg:top-8 lg:self-start">
+
+        <!-- Selected Template Visual -->
+        <section class="bg-white rounded-2xl shadow-sm p-6">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-lg font-semibold" style="color: var(--jet-black);">Plantilla</h2>
+            <div class="flex items-center gap-2">
+              <span id="template-visual-badge" class="text-xs px-2 py-1 rounded-lg font-medium" style="background-color: var(--tea-green); color: var(--jet-black);">Corporativa</span>
+              <span id="template-visual-dims" class="text-xs text-gray-500">130×160px</span>
+            </div>
+          </div>
+          <div id="template-visual-container" class="border rounded-2xl p-3 min-h-[120px] flex items-center justify-center overflow-x-auto" style="border-color: rgba(158,193,163,0.3); background: #fafdfb;">
+            <p id="template-visual-loading" class="text-gray-400 text-sm">Cargando plantilla...</p>
+            <iframe id="template-visual-frame" class="hidden" style="width: 560px; border: none;"></iframe>
+          </div>
+        </section>
 
         <!-- Preview Area -->
         <section class="bg-white rounded-2xl shadow-sm p-6">

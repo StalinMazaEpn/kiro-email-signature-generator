@@ -3,7 +3,7 @@
 const { validateGenerateRequest } = require('../utils/validation');
 const { upload, getOriginalKey } = require('../services/storageService');
 const { createBanner } = require('../services/imageToolsClient');
-const { render } = require('../services/templateEngine');
+const { render, TemplateNotFoundError } = require('../services/templateEngine');
 
 /**
  * Lambda handler: Generate a full email signature.
@@ -55,6 +55,9 @@ async function handler(event) {
     });
   } catch (err) {
     console.error('[generateSignature] Error:', err.message);
+    if (err instanceof TemplateNotFoundError) {
+      return response(404, { success: false, error: err.message });
+    }
     return response(500, { success: false, error: err.message });
   }
 }

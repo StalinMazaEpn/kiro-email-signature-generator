@@ -38,12 +38,12 @@ Resultado:
 🚀 Email Signature Generator - Dev Server
    Mode:         local
    AI Provider:  azure
-   Port:         3000
+   Port:         3005
 
-   Frontend:     http://localhost:3000/
-   API Base:     http://localhost:3000/
-   Health:       http://localhost:3000/health
-   Storage:      http://localhost:3000/storage/
+   Frontend:     http://localhost:3005/
+   API Base:     http://localhost:3005/
+   Health:       http://localhost:3005/health
+   Storage:      http://localhost:3005/storage/
 ```
 
 El servidor Express:
@@ -70,23 +70,47 @@ El servidor Express:
 
 ## Configurar IA real en local
 
-Si tienes credenciales de Azure OpenAI, agrégalas a `.env`:
+### Opción A: Azure OpenAI
+
+Agrega estas variables al `.env`:
 
 ```env
 AI_PROVIDER=azure
 AZURE_OPENAI_ENDPOINT=https://tu-recurso.openai.azure.com
 AZURE_OPENAI_KEY=tu-api-key-aqui
-AZURE_OPENAI_DEPLOYMENT=gpt-4o-mini
+AZURE_OPENAI_DEPLOYMENT=gpt-5.2         # el deployment (o modelo) real
+AZURE_OPENAI_API_STYLE=auto             # auto | legacy | openai
+AZURE_OPENAI_API_VERSION=2024-10-21     # versión que soporte tu región/modelo
+AZURE_OPENAI_API_TYPE=chat              # chat | responses
 ```
 
+El valor de `AZURE_OPENAI_ENDPOINT` depende del formato de tu recurso:
+
+- **Antiguo (por recurso):** `https://<nombre>.openai.azure.com` → normalmente `apiType=chat` (estilo `legacy`).
+- **Nuevo (AI Services):** `https://<nombre>.services.ai.azure.com/openai/v1` → sirve Chat Completions (`apiType=chat`) o la **Responses API con streaming** (`apiType=responses`).
+
+> `AZURE_OPENAI_API_TYPE=responses` solo funciona con el endpoint nuevo (termina en `/openai/v1`). Con `apiStyle=auto` el código detecta el formato según el sufijo del endpoint.
+
 Con esto, `POST /extract-fields` usará IA real para extraer campos del texto libre.
+
+### Opción B: AWS Bedrock
+
+Para usar Amazon Bedrock en su lugar:
+
+```env
+AI_PROVIDER=bedrock
+BEDROCK_MODEL_ID=anthropic.claude-3-haiku-20240307-v1:0
+BEDROCK_REGION=us-east-1
+```
+
+> Bedrock usa las credenciales/roles de AWS (`aws configure` o IAM); no requiere API key propia en `.env`.
 
 ## Configurar image-tools en local
 
 Si tienes el servicio image-tools corriendo (composición de persona sobre fondo):
 
 ```env
-IMAGE_TOOLS_URL=http://localhost:3001/api/v1/image/image-process
+IMAGE_TOOLS_URL=http://localhost:3006/api/v1/image/image-process
 IMAGE_TOOLS_API_KEY=tu-api-key
 BACKGROUND_TEMPLATE_URL=https://tu-bucket.s3.amazonaws.com/backgrounds/template.png
 ```
@@ -162,19 +186,19 @@ npm run test:watch
 ### Health check
 
 ```powershell
-Invoke-RestMethod -Uri "http://localhost:3000/health"
+Invoke-RestMethod -Uri "http://localhost:3005/health"
 ```
 
 ### Listar plantillas
 
 ```powershell
-Invoke-RestMethod -Uri "http://localhost:3000/templates"
+Invoke-RestMethod -Uri "http://localhost:3005/templates"
 ```
 
 ### Variables de una plantilla
 
 ```powershell
-Invoke-RestMethod -Uri "http://localhost:3000/templates/corporativa/variables"
+Invoke-RestMethod -Uri "http://localhost:3005/templates/corporativa/variables"
 ```
 
 ### Preview de firma
@@ -189,7 +213,7 @@ $body = @{
     templateId = "corporativa"
 } | ConvertTo-Json
 
-Invoke-RestMethod -Uri "http://localhost:3000/preview-signature" -Method Post -Body $body -ContentType "application/json"
+Invoke-RestMethod -Uri "http://localhost:3005/preview-signature" -Method Post -Body $body -ContentType "application/json"
 ```
 
 ### Extracción de campos (mock o real según config)
@@ -199,7 +223,7 @@ $body = @{
     text = "Carlos Méndez, carlos@empresa.com, Tech Lead en TechCorp, +593991234567, https://miempresa.com"
 } | ConvertTo-Json
 
-Invoke-RestMethod -Uri "http://localhost:3000/extract-fields" -Method Post -Body $body -ContentType "application/json"
+Invoke-RestMethod -Uri "http://localhost:3005/extract-fields" -Method Post -Body $body -ContentType "application/json"
 ```
 
 ### Generación completa (con imagen base64)
@@ -223,22 +247,22 @@ $body = @{
     }
 } | ConvertTo-Json -Depth 3
 
-Invoke-RestMethod -Uri "http://localhost:3000/generate-signature" -Method Post -Body $body -ContentType "application/json"
+Invoke-RestMethod -Uri "http://localhost:3005/generate-signature" -Method Post -Body $body -ContentType "application/json"
 ```
 
 ## Probar con curl (Git Bash / WSL)
 
 ```bash
 # Health check
-curl http://localhost:3000/health
+curl http://localhost:3005/health
 
 # Preview
-curl -X POST http://localhost:3000/preview-signature \
+curl -X POST http://localhost:3005/preview-signature \
   -H "Content-Type: application/json" \
   -d '{"nombre":"Carlos Méndez","cargo":"Tech Lead","email":"carlos@empresa.com","telefono":"+593991234567","templateId":"minimalista"}'
 
 # Extracción de campos
-curl -X POST http://localhost:3000/extract-fields \
+curl -X POST http://localhost:3005/extract-fields \
   -H "Content-Type: application/json" \
   -d '{"text":"Carlos Méndez, carlos@empresa.com, Tech Lead, +593991234567"}'
 ```
@@ -248,7 +272,7 @@ curl -X POST http://localhost:3000/extract-fields \
 1. Genera un hash: `node scripts/generate-hash.js tuPassword`
 2. Agrega `ADMIN_PASSWORD_HASH=<hash>` a `.env`
 3. Reinicia el servidor
-4. Navega a `http://localhost:3000/admin.html`
+4. Navega a `http://localhost:3005/admin.html`
 5. Ingresa tu password → accede al validador de templates
 
 El validador ejecuta 8 reglas sobre el HTML de un template:
@@ -260,8 +284,9 @@ El validador ejecuta 8 reglas sobre el HTML de un template:
 | Problema | Solución |
 |----------|----------|
 | `Cannot find module` | Ejecuta `cd lambda && npm install` |
-| Puerto 3000 ocupado | Cambia `PORT=3001` en `.env` |
+| Puerto 3005 ocupado | Cambia `PORT=3006` en `.env` |
 | AI extraction retorna mock | Configura `AZURE_OPENAI_ENDPOINT` y `AZURE_OPENAI_KEY` en `.env` |
+| `Azure OpenAI error (400): API version not supported` | Tu recurso no acepta esa `api-version`. Corre `node scripts/diagnose-azure.js` para ver cuál versión responde OK y fíjala en `AZURE_OPENAI_API_VERSION`. Activa `AZURE_OPENAI_DEBUG=true` para ver la URL exacta en el log |
 | Imagen no se genera | Verifica que `lambda/local-storage/` existe (se crea automáticamente) |
 | Admin no permite login | Verifica que `ADMIN_PASSWORD_HASH` está en `.env` y reinicia el server |
 | image-tools falla | Normal en local — el sistema usa fallback automático |

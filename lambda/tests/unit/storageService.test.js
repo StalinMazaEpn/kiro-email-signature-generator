@@ -3,11 +3,21 @@
 const path = require('path');
 const fs = require('fs');
 
-// Force local mode for tests
-process.env.APP_MODE = 'local';
 process.env.PORT = '3999';
 
 const { upload, getOriginalKey, getBannerKey, LOCAL_STORAGE_DIR } = require('../../src/services/storageService');
+
+// Mock Azure Storage SDK (uploadAzure uses a lazy require)
+const mockBlobUpload = jest.fn().mockResolvedValue({ requestId: 'mock-upload' });
+const mockBlobClient = { upload: mockBlobUpload };
+const mockGetBlockBlobClient = jest.fn().mockReturnValue(mockBlobClient);
+const mockGetContainerClient = jest.fn().mockReturnValue({ getBlockBlobClient: mockGetBlockBlobClient });
+
+jest.mock('@azure/storage-blob', () => ({
+  StorageSharedKeyCredential: jest.fn().mockImplementation((accountName, accountKey) => ({ accountName, accountKey })),
+  BlobServiceClient: jest.fn().mockImplementation(() => ({ getContainerClient: mockGetContainerClient })),
+}));
+
 
 describe('storageService (local mode)', () => {
   afterAll(() => {
@@ -65,5 +75,34 @@ describe('storageService (local mode)', () => {
       const key = getBannerKey('Carlos Méndez');
       expect(key).toMatch(/^banners\/\d+-carlos_m_ndez-banner\.png$/);
     });
+describe('storageService (azure mode)', () => {
+  beforeEach(() => {
+    process.env.STORAGE_PROVIDER = 'azure';
+    process.env.AZURE_ACCOUNT_NAME = 'myaccount';
+    process.env.AZURE_ACCOUNT_KEY = 'mykey';
+    process.env.AZURE_CONTAINER_NAME = 'mycontainer';
+  });
+
+  test('uploads to Azure Blob Storage and returns public URL', async () => {
+    const buffer = Buffer.from('azure data');
+    const key = 'originals/azure-test.png';
+
+    const url = await upload(key, buffer, 'image/png');
+
+    expect(require('@azure/storage-blob').BlobServiceClient).toHaveBeenCalled();
+    expect(mockGetBlockBlobClient).toHaveBeenCalledWith(key);
+    expect(mockBlobUpload).toHaveBeenCalled();
+    expect(url).toBe('https://myaccount.blob.core.windows.net/mycontainer/originals/azure-test.png');
+  });
+
+  test('throws when azure config is incomplete', async () => {
+    process.env.AZURE_ACCOUNT_NAME = '';
+    process.env.AZURE_ACCOUNT_KEY = '';
+    process.env.AZURE_CONTAINER_NAME = '';
+
+    await expect(upload('originals/x.png', Buffer.from('x'), 'image/png')).rejects.toThrow(/AZURE_ACCOUNT/);
+  });
+});
+
   });
 });

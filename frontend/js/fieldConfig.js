@@ -94,6 +94,8 @@ const FieldConfig = {
     'corporativa': { width: 130, height: 160, aspectRatio: 130/160, label: 'Portrait (130×160px)' },
     'moderna-banner': { width: 180, height: 210, aspectRatio: 180/210, label: 'Portrait (180×210px)' },
     'minimalista': { width: 56, height: 56, aspectRatio: 1, label: 'Cuadrado (56×56px)' },
+    'signature-business': { width: 162, height: 162, aspectRatio: 1, label: 'Cuadrado (162×162px)' },
+    'signature-company': { width: 240, height: 184, aspectRatio: 240/184, label: 'Landscape (240×184px)' },
   },
 
   /**

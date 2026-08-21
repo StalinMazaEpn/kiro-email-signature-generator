@@ -27,6 +27,7 @@
 
   // Cached cropped images to avoid re-cropping on every generate
   let cachedProfileCrop = null;
+  let profileImageDataUrl = null; // full data URL of the current profile photo (raw or cropped)
   let cachedBgCrop = null;
   let cachedBgTemplateId = null; // track which template the bg was cropped for
 
@@ -54,6 +55,88 @@
       }
     });
   });
+  // --- Selected Template Visual ---
+  const templateSelect = document.getElementById('templateId');
+
+  // --- Selected Template Visual (real content) ---
+  const templateFrame = document.getElementById('template-visual-frame');
+  const templateLoading = document.getElementById('template-visual-loading');
+
+  // Sample data so the template always shows its full structure even when the form is empty
+  const SAMPLE_FIELDS = {
+    nombre: 'Nombre Apellido',
+    cargo: 'Cargo / Puesto',
+    email: 'correo@empresa.com',
+    telefono: '+593 999 999 999',
+    website: 'https://miempresa.com',
+    linkedin: 'https://linkedin.com/in/ejemplo',
+  };
+
+  function buildTemplatePreviewData() {
+    const val = id => (document.getElementById(id).value || '').trim();
+    const data = { templateId: templateSelect.value };
+    for (const key of ['nombre', 'cargo', 'email', 'telefono', 'website', 'linkedin']) {
+      data[key] = val(key) || SAMPLE_FIELDS[key];
+    }
+    return data;
+  }
+
+  async function renderTemplateVisual() {
+    templateLoading.classList.remove('hidden');
+    templateFrame.classList.add('hidden');
+
+    // Update header badge/dims from the selected template
+    const cfg = FieldConfig.getTemplateImageConfig(templateSelect.value);
+    document.getElementById('template-visual-badge').textContent = templateSelect.selectedOptions[0].text;
+    document.getElementById('template-visual-dims').textContent = cfg.label;
+
+    try {
+      const result = await API.previewSignature(buildTemplatePreviewData());
+      if (!result.success) throw new Error(result.error || 'Error al renderizar la plantilla');
+      templateLoading.classList.add('hidden');
+      templateFrame.classList.remove('hidden');
+      Preview.renderInIframe(templateFrame, applyProfileImageToHtml(result.html));
+    } catch (err) {
+      templateLoading.textContent = 'No se pudo cargar la plantilla: ' + err.message;
+      templateLoading.classList.remove('hidden');
+    }
+  }
+
+  let templateRenderTimer = null;
+  function scheduleTemplateRender() {
+    clearTimeout(templateRenderTimer);
+    templateRenderTimer = setTimeout(renderTemplateVisual, 400);
+  }
+
+  /**
+   * Populates the template <select> from GET /templates (the single source
+   * of truth in lambda/src/config/templates.js) instead of the hardcoded
+   * <option>s in index.html — those stay only as a static fallback if this
+   * fetch fails (e.g. backend down on first load).
+   */
+  async function loadTemplateOptions() {
+    try {
+      const result = await API.getTemplates();
+      if (!result.success || !Array.isArray(result.templates) || !result.templates.length) return;
+      const previousValue = templateSelect.value;
+      templateSelect.innerHTML = result.templates
+        .map(t => `<option value="${t.id}" title="${t.description || ''}">${t.name}</option>`)
+        .join('');
+      if (result.templates.some(t => t.id === previousValue)) {
+        templateSelect.value = previousValue;
+      }
+    } catch (err) {
+      console.error('No se pudo cargar la lista de plantillas, se usa el fallback estático:', err.message);
+    }
+  }
+
+  templateSelect.addEventListener('change', renderTemplateVisual);
+  form.addEventListener('input', scheduleTemplateRender);
+
+  (async function initTemplateSelect() {
+    await loadTemplateOptions();
+    renderTemplateVisual();
+  })();
 
   // Set initial active state
   updateCompositionVisual();
@@ -168,11 +251,106 @@
     });
   }
 
+  // --- Field format validation (email, website, linkedin) ---
+  const FORMAT_RULES = [
+    {
+      id: 'email',
+      required: true,
+      validate: (v) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v),
+      msgInvalid: 'Ingresa un email válido (ej: usuario@empresa.com).',
+      msgRequired: 'El email es obligatorio.',
+    },
+    {
+      id: 'website',
+      required: false,
+      validate: (v) => {
+        try {
+          const u = new URL(v);
+          return /^https?:$/.test(u.protocol) && u.hostname.indexOf('.') > 0;
+        } catch { return false; }
+      },
+      msgInvalid: 'Ingresa una URL válida (ej: https://miempresa.com).',
+    },
+    {
+      id: 'linkedin',
+      required: false,
+      validate: (v) => {
+        try {
+          const u = new URL(v);
+          return /^https?:$/.test(u.protocol) &&
+            u.hostname.toLowerCase().endsWith('linkedin.com') &&
+            u.pathname.startsWith('/in/');
+        } catch { return false; }
+      },
+      msgInvalid: 'Ingresa una URL de LinkedIn válida (ej: https://linkedin.com/in/usuario).',
+    },
+  ];
+
+  function setFieldError(id, message) {
+    const input = document.getElementById(id);
+    const err = document.getElementById(id + '-error');
+    if (!input || !err) return;
+    if (message) {
+      err.textContent = message;
+      err.classList.remove('hidden');
+      input.classList.add('input-invalid');
+    } else {
+      err.classList.add('hidden');
+      err.textContent = '';
+      input.classList.remove('input-invalid');
+    }
+  }
+
+  function validateFieldLive(id) {
+    const input = document.getElementById(id);
+    const value = input.value.trim();
+    const rule = FORMAT_RULES.find(r => r.id === id);
+    if (value === '') {
+      setFieldError(id, null); // vacio: sin error en vivo (required se valida al enviar)
+      return true;
+    }
+    if (!rule.validate(value)) {
+      setFieldError(id, rule.msgInvalid);
+      return false;
+    }
+    setFieldError(id, null);
+    return true;
+  }
+
+  function validateFormatAll() {
+    let ok = true;
+    for (const rule of FORMAT_RULES) {
+      const input = document.getElementById(rule.id);
+      const value = input.value.trim();
+      if (rule.required && value === '') {
+        setFieldError(rule.id, rule.msgRequired);
+        ok = false;
+      } else if (value !== '' && !rule.validate(value)) {
+        setFieldError(rule.id, rule.msgInvalid);
+        ok = false;
+      } else {
+        setFieldError(rule.id, null);
+      }
+    }
+    return ok;
+  }
+
+  // Validación en vivo mientras el usuario escribe
+  FORMAT_RULES.forEach(rule => {
+    document.getElementById(rule.id).addEventListener('input', () => validateFieldLive(rule.id));
+  });
+
+
   // --- Preview ---
   btnPreview.addEventListener('click', handlePreview);
 
   async function handlePreview() {
     const data = getFormData();
+
+    if (!validateFormatAll()) {
+      showStatus(formStatus, 'Revisa los campos con formato inválido (Email, Website, LinkedIn).', 'error');
+      return;
+    }
 
     if (!data.nombre || !data.cargo || !data.email) {
       showStatus(formStatus, 'Completa al menos nombre, cargo y email para la vista previa.', 'error');
@@ -192,13 +370,8 @@
 
       let html = result.html;
 
-      // If user has selected an image, replace placeholder with data URL for immediate preview
-      if (imageInput.files && imageInput.files[0]) {
-        const dataUrl = await fileToDataUrl(imageInput.files[0]);
-        if (dataUrl) {
-          html = html.replace(/https:\/\/via\.placeholder\.com[^"']*/g, dataUrl);
-        }
-      }
+      // Replace placeholder with the selected profile image for immediate preview
+      html = applyProfileImageToHtml(html);
 
       Preview.showPreview(html);
     } catch (err) {
@@ -216,6 +389,11 @@
 
     const data = getFormData();
 
+    if (!validateFormatAll()) {
+      showStatus(formStatus, 'Revisa los campos con formato inválido (Email, Website, LinkedIn).', 'error');
+      return;
+    }
+
     // Validate profile image
     const profileFile = imageInput.files[0];
     if (!profileFile) {
@@ -228,37 +406,37 @@
       return;
     }
 
-    // Use cached cropped image if available, otherwise use raw file
-    if (cachedProfileCrop) {
-      data.image = cachedProfileCrop;
-    } else {
-      data.image = await fileToBase64(profileFile);
-    }
-    data.compositionParams = getCompositionParams();
-
-    // Check for optional custom background image
-    const bgInput = document.getElementById('backgroundImage');
-    if (bgInput && bgInput.files && bgInput.files[0]) {
-      const bgFile = bgInput.files[0];
-      const bgError = validateImageFile(bgFile, 'El fondo personalizado');
-      if (bgError) {
-        showStatus(formStatus, bgError, 'error');
-        return;
-      }
-      
-      // Use cached crop if available, otherwise send raw image
-      // (image-tools will use outputWidth/outputHeight from compositionParams)
-      if (cachedBgCrop) {
-        data.backgroundImage = cachedBgCrop;
-      } else {
-        data.backgroundImage = await fileToBase64(bgFile);
-      }
-    }
-
     setLoading(btnGenerate, true, 'Generando...');
     hideStatus(formStatus);
 
     try {
+      // Use cached cropped image if available, otherwise use raw file
+      if (cachedProfileCrop) {
+        data.image = cachedProfileCrop;
+      } else {
+        data.image = await fileToBase64(profileFile);
+      }
+      data.compositionParams = getCompositionParams();
+
+      // Check for optional custom background image
+      const bgInput = document.getElementById('backgroundImage');
+      if (bgInput && bgInput.files && bgInput.files[0]) {
+        const bgFile = bgInput.files[0];
+        const bgError = validateImageFile(bgFile, 'El fondo personalizado');
+        if (bgError) {
+          showStatus(formStatus, bgError, 'error');
+          return;
+        }
+
+        // Use cached crop if available, otherwise send raw image
+        // (image-tools will use outputWidth/outputHeight from compositionParams)
+        if (cachedBgCrop) {
+          data.backgroundImage = cachedBgCrop;
+        } else {
+          data.backgroundImage = await fileToBase64(bgFile);
+        }
+      }
+
       const result = await API.generateSignature(data);
 
       if (!result.success) {
@@ -405,6 +583,23 @@ ${html}
       templateId: document.getElementById('templateId').value,
     };
   }
+  /**
+   * Replace the placeholder banner URL in rendered template HTML with the
+   * currently selected profile image (data URL), so previews look better.
+   * @param {string} html - Rendered template HTML
+   * @returns {string}
+   */
+  function applyProfileImageToHtml(html) {
+    if (!profileImageDataUrl) return html;
+    // Matches the preview placeholder banner regardless of shape: the old
+    // dead via.placeholder.com URL, the inline data:image/svg+xml SVG the
+    // backend uses now, and — for the legacy templates — that SVG
+    // with a "#/<email>" fragment appended (see buildLegacyData).
+    // `[^"']*` safely swallows all of that up to the closing quote.
+    return html.replace(/(https:\/\/via\.placeholder\.com[^"']*|data:image\/svg\+xml[^"']*)/g, profileImageDataUrl);
+  }
+
+
 
   /**
    * Convert a File to base64 string (without the data:... prefix).
@@ -515,8 +710,8 @@ ${html}
     });
 
     input.addEventListener('change', () => {
-      // Clear cached crop when new file is selected
-      if (inputId === 'image') cachedProfileCrop = null;
+      // Clear cached crop / preview data when new file is selected
+      if (inputId === 'image') { cachedProfileCrop = null; profileImageDataUrl = null; }
       if (inputId === 'backgroundImage') { cachedBgCrop = null; cachedBgTemplateId = null; }
 
       if (input.files && input.files[0]) {
@@ -532,6 +727,11 @@ ${html}
           `;
             preview.classList.remove('hidden');
 
+            if (inputId === 'image') {
+              profileImageDataUrl = e.target.result;
+              renderTemplateVisual();
+            }
+
             // Attach crop button handler
             const cropBtn = preview.querySelector('.btn-crop');
             cropBtn.addEventListener('click', async (evt) => {
@@ -541,8 +741,10 @@ ${html}
                 const cropped = await CropperHandler.openFree(dataUrl);
                 if (cropped) {
                   cachedProfileCrop = cropped;
+                  profileImageDataUrl = 'data:image/png;base64,' + cropped;
                   cropBtn.textContent = '✅ Recortada';
                   cropBtn.disabled = true;
+                  renderTemplateVisual();
                 }
               } else if (inputId === 'backgroundImage') {
                 const templateId = document.getElementById('templateId').value;
@@ -561,6 +763,7 @@ ${html}
       } else {
         dropzone.classList.remove('has-file');
         if (preview) { preview.classList.add('hidden'); preview.innerHTML = ''; }
+        if (inputId === 'image') { profileImageDataUrl = null; renderTemplateVisual(); }
       }
     });
   }

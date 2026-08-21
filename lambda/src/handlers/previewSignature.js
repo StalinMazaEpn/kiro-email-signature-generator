@@ -1,9 +1,15 @@
 'use strict';
 
 const { validatePreviewRequest } = require('../utils/validation');
-const { render } = require('../services/templateEngine');
+const { render, TemplateNotFoundError } = require('../services/templateEngine');
 
-const PLACEHOLDER_BANNER = 'https://via.placeholder.com/600x120/e2e8f0/64748b?text=Banner+Preview';
+const PLACEHOLDER_BANNER = 'data:image/svg+xml;base64,' + Buffer.from(
+  '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="120">' +
+  '<rect width="100%" height="100%" fill="#e2e8f0"/>' +
+  '<text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" ' +
+  'font-family="sans-serif" font-size="20" fill="#64748b">Banner Preview</text>' +
+  '</svg>'
+).toString('base64');
 
 /**
  * Lambda handler: Preview an email signature without image processing.
@@ -30,6 +36,9 @@ async function handler(event) {
     return response(200, { success: true, html });
   } catch (err) {
     console.error('[previewSignature] Error:', err.message);
+    if (err instanceof TemplateNotFoundError) {
+      return response(404, { success: false, error: err.message });
+    }
     return response(500, { success: false, error: err.message });
   }
 }

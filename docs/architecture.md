@@ -150,7 +150,7 @@ sequenceDiagram
 | `handlers/previewSignature.js` | Lambda: render con placeholder sin procesar imagen |
 | `handlers/extractFields.js` | Lambda: enviar a IA → parsear → retornar campos |
 | `services/templateEngine.js` | Cargar y renderizar plantillas Mustache |
-| `services/storageService.js` | Abstracción storage: S3 (prod) / filesystem (dev) |
+| `services/storageService.js` | Abstracción storage: S3 / Azure / filesystem |
 | `services/imageToolsClient.js` | Cliente image-tools con fallback local |
 | `providers/aiProvider.js` | Factory: selecciona provider según `AI_PROVIDER` |
 | `providers/azureOpenAIProvider.js` | Implementación Azure OpenAI REST |
@@ -177,11 +177,11 @@ El servicio `imageToolsClient.js` maneja la composición de persona sobre fondo:
 
 ## Modo local vs producción
 
-| Componente | Local (`APP_MODE=local`) | Producción (`APP_MODE=aws`) |
-|------------|--------------------------|------------------------------|
-| Servidor | Express en localhost:3000 | Lambda + API Gateway HTTP |
+| Componente | Local (`STORAGE_PROVIDER=local`, default) | Producción (`STORAGE_PROVIDER=s3` o `azure`) |
+|------------|--------------------------------------------|-----------------------------------------------|
+| Servidor | Express en localhost:3005 | Lambda + API Gateway HTTP |
 | Storage | Filesystem `lambda/local-storage/` | S3 bucket público |
-| URLs de imagen | `http://localhost:3000/storage/...` | `https://<bucket>.s3.amazonaws.com/...` |
+| URLs de imagen | `http://localhost:3005/storage/...` | `https://<bucket>.s3.amazonaws.com/...` |
 | Image-tools | Intenta real si configurado → fallback copia original | Llama API externa (error si falla) |
 | AI Provider | Azure OpenAI real (si hay creds) / Mock regex | Bedrock o Azure según config |
 | Frontend hosting | Servido por Express estático | S3 Static Website |
@@ -208,7 +208,7 @@ Si no hay credenciales configuradas en modo local, el endpoint `/extract-fields`
 
 ## Infraestructura AWS (SAM)
 
-El archivo `template.yaml` define:
+El archivo `template_aws.yml` define:
 
 - 1 HTTP API Gateway con CORS
 - 3 Lambda functions (Node.js 20, 512MB RAM, 60s timeout)

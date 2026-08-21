@@ -62,7 +62,7 @@ cd .. && cp .env.example .env
 cd lambda && npm run dev
 ```
 
-Abre `http://localhost:3000` — funciona sin AWS ni servicios externos.
+Abre `http://localhost:3005` — funciona sin AWS ni servicios externos.
 
 ## Funcionalidades
 
@@ -86,20 +86,33 @@ Abre `http://localhost:3000` — funciona sin AWS ni servicios externos.
 
 | Variable | Default | Requerida | Descripción |
 |----------|---------|-----------|-------------|
-| `APP_MODE` | `local` | Sí | `local` (mocks) o `aws` (producción) |
-| `PORT` | `3000` | No | Puerto del dev server |
-| `S3_BUCKET_NAME` | — | Prod | Nombre del bucket S3 para assets |
-| `AWS_REGION` | `us-east-1` | Prod | Región AWS |
+| `PORT` | `3005` | No | Puerto del dev server |
+| `STORAGE_PROVIDER` | `local` | No | `local` (filesystem), `s3` o `azure` — define el almacenamiento |
+| `S3_BUCKET_NAME` | — | Si s3 | Nombre del bucket S3 para assets |
+| `AWS_REGION` | `us-east-1` | Si s3 | Región AWS |
+| `AZURE_ACCOUNT_NAME` | — | Si azure | Nombre del storage account de Azure |
+| `AZURE_ACCOUNT_KEY` | — | Si azure | Clave de acceso del storage account |
+| `AZURE_CONTAINER_NAME` | — | Si azure | Container de Azure Storage |
 | `IMAGE_TOOLS_URL` | — | Opcional | URL del servicio de procesamiento de imagen |
 | `IMAGE_TOOLS_API_KEY` | — | Opcional | API key para image-tools |
 | `BACKGROUND_TEMPLATE_URL` | — | Opcional | URL del fondo por defecto para banners |
 | `AI_PROVIDER` | `azure` | Sí | `azure` o `bedrock` |
-| `AZURE_OPENAI_ENDPOINT` | — | Si azure | URL del recurso Azure OpenAI |
+| `AZURE_OPENAI_ENDPOINT` | — | Si azure | Endpoint (antiguo `*.openai.azure.com` o nuevo `*/openai/v1`) |
 | `AZURE_OPENAI_KEY` | — | Si azure | API key de Azure OpenAI |
-| `AZURE_OPENAI_DEPLOYMENT` | `gpt-4o-mini` | Si azure | Nombre del deployment |
+| `AZURE_OPENAI_DEPLOYMENT` | `gpt-4o-mini` | Si azure | Deployment/modelo desplegado |
+| `AZURE_OPENAI_API_STYLE` | `auto` | No | `auto`, `legacy` u `openai` (formato del endpoint) |
+| `AZURE_OPENAI_API_VERSION` | `2024-10-21` | No | Versión de API de Azure OpenAI |
+| `AZURE_OPENAI_API_TYPE` | `chat` | No | `chat` (Chat Completions) o `responses` (Responses API + stream) |
+> **☁️ Storage: elige un solo proveedor.** Configura `STORAGE_PROVIDER` a `local`, `s3` o `azure` y completa únicamente el bloque correspondiente (S3 de AWS **o** Azure Storage). En `local`, las imágenes van a `lambda/local-storage/`.
+
+
 | `BEDROCK_MODEL_ID` | `anthropic.claude-3-haiku-20240307-v1:0` | Si bedrock | ID del modelo |
 | `BEDROCK_REGION` | `us-east-1` | Si bedrock | Región de Bedrock |
 | `ADMIN_PASSWORD_HASH` | — | Opcional | Hash SHA-256 del password admin |
+| `AZURE_OPENAI_DEBUG` | `false` | No | `true` para loguear URL/body del request a Azure (la key se enmascara) |
+> **🤖 IA: elige un solo proveedor.** Configura `AI_PROVIDER` a `azure` o `bedrock` y completa únicamente el bloque correspondiente (Azure OpenAI **o** AWS Bedrock); no hace falta llenar ambos. Si el proveedor elegido no tiene credenciales, en modo local la extracción de campos usa un "mock" por regex (funciona sin IA). Más detalle en [`docs/local-development.md`](docs/local-development.md) → *"Configurar IA real en local"*.
+
+
 
 Para generar el hash de admin:
 
@@ -151,10 +164,10 @@ Al hacer `sam deploy --guided` te pedirá estos valores:
 
 ```bash
 # 1. Build del proyecto (empaqueta Lambda + dependencias)
-sam build
+sam build --template-file template_aws.yml
 
 # 2. Deploy interactivo (primera vez)
-sam deploy --guided
+sam deploy --template-file template_aws.yml --guided
 # Te preguntará cada parámetro. Responde según la tabla de arriba.
 # Al final genera samconfig.toml para futuros deploys.
 
@@ -178,8 +191,8 @@ aws s3 sync frontend/ s3://<FrontendBucketName>/ --delete
 ### Deploys posteriores
 
 ```bash
-# Solo si cambiaste código Lambda o template.yaml:
-sam build && sam deploy
+# Solo si cambiaste código Lambda o template_aws.yml:
+sam build --template-file template_aws.yml && sam deploy --template-file template_aws.yml
 
 # Solo si cambiaste archivos del frontend:
 aws s3 sync frontend/ s3://<FrontendBucketName>/ --delete
@@ -291,7 +304,7 @@ Cobertura: config, validación, template engine, storage, AI provider factory y 
 │   └── minimalista.mustache    # 56×56px square
 ├── scripts/
 │   └── generate-hash.js        # Utilidad: generar SHA-256 hash
-├── template.yaml               # AWS SAM (infra)
+├── template_aws.yml              # SAM AWS (infra)
 ├── .env                        # Config local (gitignored)
 ├── .env.example                # Ejemplo de configuración
 └── docs/

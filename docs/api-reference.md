@@ -4,7 +4,7 @@
 
 | Entorno | URL |
 |---------|-----|
-| Local | `http://localhost:3000` |
+| Local | `http://localhost:3005` |
 | Producción | `https://{api-id}.execute-api.{region}.amazonaws.com` |
 
 ---
@@ -67,7 +67,7 @@ Genera la firma completa: sube imagen, procesa banner con image-tools, compila H
 {
   "success": true,
   "html": "<table cellpadding=\"0\" cellspacing=\"0\">...</table>",
-  "bannerUrl": "http://localhost:3000/storage/banners/1719000000-carlos_mendez-banner.png",
+  "bannerUrl": "http://localhost:3005/storage/banners/1719000000-carlos_mendez-banner.png",
   "usedFallback": false,
   "fallbackReason": null
 }
@@ -79,7 +79,7 @@ Cuando image-tools no está disponible (fallback):
 {
   "success": true,
   "html": "<table>...</table>",
-  "bannerUrl": "http://localhost:3000/storage/banners/1719000000-carlos_mendez-banner.png",
+  "bannerUrl": "http://localhost:3005/storage/banners/1719000000-carlos_mendez-banner.png",
   "usedFallback": true,
   "fallbackReason": "IMAGE_TOOLS_URL not configured"
 }

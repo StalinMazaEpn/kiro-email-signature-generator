@@ -7,14 +7,14 @@
 
 // Mock storageService and imageToolsClient for generateSignature tests
 jest.mock('../../src/services/storageService', () => ({
-  upload: jest.fn().mockResolvedValue('http://localhost:3000/storage/originals/test.png'),
+  upload: jest.fn().mockResolvedValue('http://localhost:3005/storage/originals/test.png'),
   getOriginalKey: jest.fn().mockReturnValue('originals/12345-test.png'),
   getBannerKey: jest.fn().mockReturnValue('banners/12345-test-banner.png'),
   LOCAL_STORAGE_DIR: '/tmp/local-storage',
 }));
 
 jest.mock('../../src/services/imageToolsClient', () => ({
-  createBanner: jest.fn().mockResolvedValue({ url: 'http://localhost:3000/storage/banners/test-banner.png', usedFallback: false }),
+  createBanner: jest.fn().mockResolvedValue({ url: 'http://localhost:3005/storage/banners/test-banner.png', usedFallback: false }),
 }));
 
 jest.mock('../../src/providers/aiProvider', () => ({

@@ -1,6 +1,7 @@
 version = 0.1
 
 [default.deploy.parameters]
+template_file = "template_aws.yml"
 stack_name = "email-signature-generator"
 resolve_s3 = true
 s3_prefix = "email-signature-generator"

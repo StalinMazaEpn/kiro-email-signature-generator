@@ -1,7 +1,9 @@
 'use strict';
 
+const { TEMPLATE_CATALOG } = require('../config/templates');
+
 const REQUIRED_FIELDS = ['nombre', 'cargo', 'email', 'telefono', 'templateId', 'image'];
-const VALID_TEMPLATES = ['corporativa', 'moderna-banner', 'minimalista'];
+const VALID_TEMPLATES = TEMPLATE_CATALOG.map((t) => t.id);
 
 /**
  * Validates a generate-signature request body.

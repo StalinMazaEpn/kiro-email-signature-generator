@@ -18,7 +18,7 @@ Globals:
         AZURE_OPENAI_KEY: !Ref AzureOpenAIKey
         AZURE_OPENAI_DEPLOYMENT: !Ref AzureOpenAIDeployment
         ADMIN_PASSWORD_HASH: !Ref AdminPasswordHash
-        APP_MODE: aws
+        STORAGE_PROVIDER: s3
 
 Parameters:
   ImageToolsUrl:

@@ -5,14 +5,12 @@
  * Serves the same endpoints locally so you can test without deploying to AWS.
  *
  * Usage: npm run dev (from root or from /lambda)
- * Requires: .env file with at minimum APP_MODE=local
+ * Storage/AI providers are controlled entirely by STORAGE_PROVIDER and
+ * AI_PROVIDER in .env (both default to filesystem/local-friendly values).
  */
 
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
-
-// Force local mode for dev server
-process.env.APP_MODE = 'local';
 
 const express = require('express');
 const cors = require('cors');
@@ -34,6 +32,17 @@ app.use(express.json({ limit: '15mb' }));
 // Serve local-storage files (replaces S3 public URLs in dev)
 app.use('/storage', express.static(LOCAL_STORAGE_DIR));
 
+// config.js is generated at deploy time and gitignored; serve an empty stub
+// locally (unless the user placed a real one) so the browser doesn't try to
+// execute the default 404 HTML page as JS.
+app.get('/config.js', (req, res) => {
+  const configPath = path.join(__dirname, '../frontend/config.js');
+  if (fs.existsSync(configPath)) {
+    return res.type('application/javascript').sendFile(configPath);
+  }
+  res.type('application/javascript').send('// no-op: config.js is generated at deploy time\n');
+});
+
 // Serve frontend files
 app.use('/', express.static(path.join(__dirname, '../frontend')));
 
@@ -44,6 +53,7 @@ app.use('/', express.static(path.join(__dirname, '../frontend')));
  * Full flow: upload image → process banner → render template
  */
 app.post('/generate-signature', async (req, res) => {
+  console.log('[generate-signature] Request recibida');
   try {
     const validation = validateGenerateRequest(req.body);
     if (!validation.valid) {
@@ -75,13 +85,15 @@ app.post('/generate-signature', async (req, res) => {
     const fields = { nombre, cargo, email, telefono, website, linkedin, bannerUrl };
     const html = render(templateId, fields);
 
-    res.json({ 
-      success: true, 
-      html, 
+    console.log('[generate-signature] Enviando respuesta 200 al cliente (usedFallback:', bannerResult.usedFallback || false, ')');
+    res.json({
+      success: true,
+      html,
       bannerUrl,
       usedFallback: bannerResult.usedFallback || false,
       fallbackReason: bannerResult.fallbackReason || null
     });
+    console.log('[generate-signature] Respuesta enviada');
   } catch (err) {
     console.error('[generate-signature] Error:', err.message);
     res.status(500).json({ success: false, error: err.message });
@@ -101,7 +113,13 @@ app.post('/preview-signature', async (req, res) => {
 
     const { nombre, cargo, email, telefono, website, linkedin, templateId } = req.body;
 
-    const placeholderBanner = 'https://via.placeholder.com/600x120/e2e8f0/64748b?text=Banner+Preview';
+    const placeholderBanner = 'data:image/svg+xml;base64,' + Buffer.from(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="120">' +
+      '<rect width="100%" height="100%" fill="#e2e8f0"/>' +
+      '<text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" ' +
+      'font-family="sans-serif" font-size="20" fill="#64748b">Banner Preview</text>' +
+      '</svg>'
+    ).toString('base64');
     const fields = { nombre, cargo, email, telefono, website, linkedin, bannerUrl: placeholderBanner };
     const html = render(templateId, fields);
 
@@ -201,7 +219,7 @@ app.get('/templates/:id/variables', (req, res) => {
 app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
-    mode: config.appMode,
+    storageProvider: config.storageProvider,
     aiProvider: config.aiProvider,
     hasAICredentials: config.aiProvider === 'azure'
       ? !!(config.azure.endpoint && config.azure.key)
@@ -250,13 +268,13 @@ function extractFieldsMock(text) {
 const PORT = config.port;
 app.listen(PORT, () => {
   console.log(`\n🚀 Email Signature Generator - Dev Server`);
-  console.log(`   Mode:         ${config.appMode}`);
+  console.log(`   Storage:      ${config.storageProvider}`);
   console.log(`   AI Provider:  ${config.aiProvider}`);
   console.log(`   Port:         ${PORT}`);
   console.log(`\n   Frontend:     http://localhost:${PORT}/`);
   console.log(`   API Base:     http://localhost:${PORT}/`);
   console.log(`   Health:       http://localhost:${PORT}/health`);
-  console.log(`   Storage:      http://localhost:${PORT}/storage/`);
+  console.log(`   Storage URL:  http://localhost:${PORT}/storage/`);
   console.log(`\n   Endpoints:`);
   console.log(`   POST /generate-signature`);
   console.log(`   POST /preview-signature`);

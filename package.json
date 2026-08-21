@@ -8,6 +8,13 @@
     "test": "cd lambda && npm test",
     "generate-test": "node scripts/generate-test.js"
   },
-  "keywords": ["email-signature", "serverless", "aws-lambda"],
-  "license": "MIT"
+  "keywords": [
+    "email-signature",
+    "serverless",
+    "aws-lambda"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^17.4.2"
+  }
 }
