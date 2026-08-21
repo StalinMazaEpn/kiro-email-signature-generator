@@ -290,3 +290,45 @@ El validador ejecuta 8 reglas sobre el HTML de un template:
 | Imagen no se genera | Verifica que `lambda/local-storage/` existe (se crea automáticamente) |
 | Admin no permite login | Verifica que `ADMIN_PASSWORD_HASH` está en `.env` y reinicia el server |
 | image-tools falla | Normal en local — el sistema usa fallback automático |
+
+## Hacer un commit con otra identidad (sin tocar tu config global)
+
+Funciona igual en Windows (Git Bash, PowerShell o CMD). Usa `-c` para aplicar `user.name`/`user.email` solo a ese comando, sin cambiar la configuración global ni la del repo:
+
+```bash
+git -c user.name="Juan Pérez" -c user.email="juan@example.com" commit -m "feat: ..."
+```
+
+Para comprobar qué identidad usaría un commit antes de hacerlo:
+
+```bash
+git var GIT_AUTHOR_IDENT
+git var GIT_COMMITTER_IDENT
+```
+
+Salida esperada: `Juan Pérez <juan@example.com> 1755780000 -0500`.
+
+> Importante: esto solo cambia la identidad del commit (autor/committer), no las credenciales del `push`. Puedes commitear con el email de una cuenta y luego hacer `push` autenticado con otra.
+
+## Hacer push con un PAT usando una cuenta específica
+
+Para forzar que el `push` se autentique con una cuenta concreta (distinta a la que tengas guardada en el credential manager), pasa el usuario y el PAT (Personal Access Token) directamente en la URL remota, solo para ese comando:
+
+```bash
+git push https://<usuario>:<PAT>@github.com/<org>/<repo>.git <branch>
+```
+
+Ejemplo:
+
+```bash
+git push https://juanperez:ghp_xxxxxxxxxxxxxxxxxxxx@github.com/handytec/kiro-email-signature-generator.git main
+```
+
+No modifica el `remote origin` guardado (`git remote -v` sigue igual) — es válido solo para ese push. Si prefieres no escribir el PAT en cada comando, puedes crear un remoto alterno una sola vez:
+
+```bash
+git remote add con-pat https://<usuario>:<PAT>@github.com/<org>/<repo>.git
+git push con-pat main
+```
+
+> Cuidado: la URL con el PAT queda en texto plano en `.git/config` si usas `remote add`, y en el historial de la shell si la escribes inline — no la compartas ni la pegues en logs. Genera el PAT con el mínimo scope necesario (`repo`) y con expiración.
