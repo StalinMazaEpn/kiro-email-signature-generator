@@ -54,8 +54,8 @@ describe('resolveBannerFilename', () => {
   });
 
   test('{emailUser} keeps the dots from the local part of the email', () => {
-    const name = resolveBannerFilename('{emailUser}@handytec.ai.{ext}', { email: 'maria.lopez@empresa.com' }, 'png');
-    expect(name).toBe('maria.lopez@handytec.ai.png');
+    const name = resolveBannerFilename('{emailUser}@contoso.ai.{ext}', { email: 'maria.lopez@empresa.com' }, 'png');
+    expect(name).toBe('maria.lopez@contoso.ai.png');
   });
 
   test('{emailUser} strips unsafe characters from the local part', () => {

@@ -337,7 +337,7 @@ Cuando el usuario descarga o abre la firma en una ventana nueva, el frontend env
 ```json
 {
   "head": {
-    "titlePattern": "Firma de {nombre} - handytec"
+    "titlePattern": "Firma de {nombre} - contoso"
   }
 }
 ```
@@ -391,7 +391,7 @@ git push https://<usuario>:<PAT>@github.com/<org>/<repo>.git <branch>
 Ejemplo:
 
 ```bash
-git push https://juanperez:ghp_xxxxxxxxxxxxxxxxxxxx@github.com/handytec/kiro-email-signature-generator.git main
+git push https://juanperez:ghp_xxxxxxxxxxxxxxxxxxxx@github.com/contoso/kiro-email-signature-generator.git main
 ```
 
 No modifica el `remote origin` guardado (`git remote -v` sigue igual) — es válido solo para ese push. Si prefieres no escribir el PAT en cada comando, puedes crear un remoto alterno una sola vez:
