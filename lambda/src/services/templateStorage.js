@@ -1,7 +1,7 @@
 'use strict';
 
 const { loadTemplateConfig } = require('./templateEngine');
-const { upload, uploadFtp, uploadSftp, getBannerKey, sanitizeForFilename } = require('./storageService');
+const { upload, uploadFtp, uploadSftp, listFtp, listSftp, getBannerKey, sanitizeForFilename } = require('./storageService');
 
 /**
  * Thrown when a template's config.json enables a custom banner storage
@@ -116,6 +116,31 @@ async function uploadBanner(templateId, fields, buffer, contentType) {
     return { url };
   }
 
+  const { type, conn, publicBaseUrl } = resolveStorageConnection(templateId, storage);
+
+  const ext = EXTENSION_BY_CONTENT_TYPE[contentType] || 'png';
+  const filename = resolveBannerFilename(config.banner.filenamePattern || '{nombre}-{timestamp}.{ext}', fields, ext);
+
+  if (type === 'ftp') {
+    await uploadFtp(conn, filename, buffer);
+  } else {
+    await uploadSftp(conn, filename, buffer);
+  }
+
+  const url = `${publicBaseUrl.replace(/\/$/, '')}/${filename}`;
+  return { url };
+}
+
+/**
+ * Resolves a template's `banner.storage` config into a connection object
+ * plus credentials read from the environment, applying the same validation
+ * uploadBanner does. Shared by uploadBanner and listTemplateFiles so the
+ * config/credential resolution rules only live in one place.
+ * @param {string} templateId
+ * @param {object} storage - config.banner.storage block
+ * @returns {{type: 'ftp'|'sftp', conn: object, publicBaseUrl: string}}
+ */
+function resolveStorageConnection(templateId, storage) {
   const { type, host, remotePath, publicBaseUrl, port, secure } = storage;
 
   if (type !== 'ftp' && type !== 'sftp') {
@@ -137,22 +162,34 @@ async function uploadBanner(templateId, fields, buffer, contentType) {
     );
   }
 
-  const ext = EXTENSION_BY_CONTENT_TYPE[contentType] || 'png';
-  const filename = resolveBannerFilename(config.banner.filenamePattern || '{nombre}-{timestamp}.{ext}', fields, ext);
-  const conn = { host, port, secure, remotePath, user, password };
+  return { type, conn: { host, port, secure, remotePath, user, password }, publicBaseUrl };
+}
 
-  if (type === 'ftp') {
-    await uploadFtp(conn, filename, buffer);
-  } else {
-    await uploadSftp(conn, filename, buffer);
+/**
+ * Lists the files in a template's custom banner storage destination
+ * (read-only — never uploads/deletes). Used by the admin panel's file
+ * browser. Returns null when the template has no custom storage configured
+ * (nothing to browse beyond the app's default storage).
+ * @param {string} templateId
+ * @returns {Promise<{type: string, remotePath: string, publicBaseUrl: string, files: Array} | null>}
+ */
+async function listTemplateFiles(templateId) {
+  const config = loadTemplateConfig(templateId);
+  const storage = config?.banner?.storage;
+
+  if (!storage || storage.enabled === false) {
+    return null;
   }
 
-  const url = `${publicBaseUrl.replace(/\/$/, '')}/${filename}`;
-  return { url };
+  const { type, conn, publicBaseUrl } = resolveStorageConnection(templateId, storage);
+  const files = type === 'ftp' ? await listFtp(conn) : await listSftp(conn);
+
+  return { type, remotePath: conn.remotePath, publicBaseUrl, files };
 }
 
 module.exports = {
   uploadBanner,
+  listTemplateFiles,
   resolveBannerFilename,
   TemplateStorageConfigError,
 };

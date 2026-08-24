@@ -18,10 +18,10 @@ const fs = require('fs');
 
 const { getConfig } = require('./src/utils/config');
 const { validateGenerateRequest, validatePreviewRequest, validateExtractRequest } = require('./src/utils/validation');
-const { render, resolvePageTitle, getTemplateList, getTemplateVariables } = require('./src/services/templateEngine');
+const { render, resolvePageTitle, getTemplateList, getTemplateVariables, loadTemplateConfig } = require('./src/services/templateEngine');
 const { upload, getOriginalKey, LOCAL_STORAGE_DIR } = require('./src/services/storageService');
 const { createBanner } = require('./src/services/imageToolsClient');
-const { TemplateStorageConfigError } = require('./src/services/templateStorage');
+const { TemplateStorageConfigError, listTemplateFiles } = require('./src/services/templateStorage');
 
 const app = express();
 const config = getConfig();
@@ -33,15 +33,20 @@ app.use(express.json({ limit: '15mb' }));
 // Serve local-storage files (replaces S3 public URLs in dev)
 app.use('/storage', express.static(LOCAL_STORAGE_DIR));
 
-// config.js is generated at deploy time and gitignored; serve an empty stub
-// locally (unless the user placed a real one) so the browser doesn't try to
-// execute the default 404 HTML page as JS.
+// config.js is generated at deploy time and gitignored. Locally, serve it
+// generated on the fly from .env so ADMIN_PASSWORD_HASH reaches the admin
+// login form (window.ADMIN_CONFIG) the same way it does in production,
+// unless the user placed a real static file to override it.
 app.get('/config.js', (req, res) => {
   const configPath = path.join(__dirname, '../frontend/config.js');
   if (fs.existsSync(configPath)) {
     return res.type('application/javascript').sendFile(configPath);
   }
-  res.type('application/javascript').send('// no-op: config.js is generated at deploy time\n');
+  const lines = ['// Auto-generated locally by dev-server.js from .env'];
+  if (config.adminPasswordHash) {
+    lines.push(`window.ADMIN_CONFIG = { passwordHash: ${JSON.stringify(config.adminPasswordHash)} };`);
+  }
+  res.type('application/javascript').send(lines.join('\n') + '\n');
 });
 
 // Serve frontend files
@@ -215,6 +220,46 @@ app.get('/templates/:id/variables', (req, res) => {
     res.json({ success: true, variables: vars });
   } catch (err) {
     res.status(404).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * GET /admin/storage-templates
+ * Lists templates that have a custom banner.storage (FTP/SFTP) destination
+ * configured, for the admin panel's read-only file browser.
+ */
+app.get('/admin/storage-templates', (req, res) => {
+  const templates = getTemplateList()
+    .map(({ id, name }) => ({ id, name, storage: loadTemplateConfig(id)?.banner?.storage || null }))
+    .filter((t) => t.storage && t.storage.enabled !== false)
+    .map(({ id, name, storage }) => ({
+      id,
+      name,
+      type: storage.type,
+      host: storage.host,
+      remotePath: storage.remotePath,
+    }));
+  res.json({ success: true, templates });
+});
+
+/**
+ * GET /admin/storage-templates/:id/files
+ * Read-only listing of the files present in a template's custom banner
+ * storage destination (FTP/SFTP). Never uploads or deletes anything.
+ */
+app.get('/admin/storage-templates/:id/files', async (req, res) => {
+  try {
+    const result = await listTemplateFiles(req.params.id);
+    if (!result) {
+      return res.status(404).json({ success: false, error: `Template "${req.params.id}" has no custom storage configured.` });
+    }
+    res.json({ success: true, ...result });
+  } catch (err) {
+    console.error('[admin/storage-templates/:id/files] Error:', err.message);
+    if (err instanceof TemplateStorageConfigError) {
+      return res.status(400).json({ success: false, error: err.message });
+    }
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 

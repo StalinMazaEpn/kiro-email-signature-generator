@@ -159,7 +159,7 @@
         params = { scalePercent: 100, horizontalAlign: 'center', verticalAlign: 'center', paddingPercent: 0 };
         break;
       case 'bottom':
-        params = { scalePercent: 80, horizontalAlign: 'center', verticalAlign: 'bottom', paddingPercent: 0 };
+        params = { scalePercent: 75, horizontalAlign: 'center', verticalAlign: 'bottom', paddingPercent: 0 };
         break;
       case 'advanced':
         params = {

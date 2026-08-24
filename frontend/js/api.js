@@ -60,5 +60,26 @@ const API = (() => {
     return response.json();
   }
 
-  return { generateSignature, previewSignature, extractFields, getTemplates };
+  /**
+   * Get templates that have a custom FTP/SFTP banner storage destination
+   * configured (admin panel file browser).
+   * @returns {Promise<{ success: boolean, templates?: Array }>}
+   */
+  async function getStorageTemplates() {
+    const response = await fetch(`${BASE_URL}/admin/storage-templates`);
+    return response.json();
+  }
+
+  /**
+   * Read-only listing of the files in a template's custom banner storage
+   * destination (admin panel file browser).
+   * @param {string} templateId
+   * @returns {Promise<{ success: boolean, type?: string, remotePath?: string, publicBaseUrl?: string, files?: Array, error?: string }>}
+   */
+  async function getStorageTemplateFiles(templateId) {
+    const response = await fetch(`${BASE_URL}/admin/storage-templates/${encodeURIComponent(templateId)}/files`);
+    return response.json();
+  }
+
+  return { generateSignature, previewSignature, extractFields, getTemplates, getStorageTemplates, getStorageTemplateFiles };
 })();

@@ -217,11 +217,71 @@ async function uploadSftp(conn, filename, body) {
   }
 }
 
+/**
+ * List the contents of a directory on an FTP (or FTPS) server. Read-only —
+ * used by the admin panel's file browser, see templateStorage.js.
+ * @param {{host: string, port?: number, secure?: boolean, remotePath: string, user: string, password: string}} conn
+ * @returns {Promise<Array<{name: string, size: number, isDirectory: boolean, modifiedAt: string|null}>>}
+ */
+async function listFtp(conn) {
+  const { Client } = require('basic-ftp');
+  const client = new Client(20000);
+  try {
+    await client.access({
+      host: conn.host,
+      port: conn.port || 21,
+      secure: !!conn.secure,
+      user: conn.user,
+      password: conn.password,
+    });
+    const entries = await client.list(conn.remotePath);
+    return entries.map((entry) => ({
+      name: entry.name,
+      size: entry.size,
+      isDirectory: entry.isDirectory,
+      modifiedAt: entry.rawModifiedAt || entry.modifiedAt || null,
+    }));
+  } finally {
+    client.close();
+  }
+}
+
+/**
+ * List the contents of a directory on an SFTP server. Read-only — used by
+ * the admin panel's file browser, see templateStorage.js.
+ * @param {{host: string, port?: number, remotePath: string, user: string, password: string}} conn
+ * @returns {Promise<Array<{name: string, size: number, isDirectory: boolean, modifiedAt: string|null}>>}
+ */
+async function listSftp(conn) {
+  const SftpClient = require('ssh2-sftp-client');
+  const client = new SftpClient();
+  try {
+    await client.connect({
+      host: conn.host,
+      port: conn.port || 22,
+      username: conn.user,
+      password: conn.password,
+      readyTimeout: 20000,
+    });
+    const entries = await client.list(conn.remotePath);
+    return entries.map((entry) => ({
+      name: entry.name,
+      size: entry.size,
+      isDirectory: entry.type === 'd',
+      modifiedAt: entry.modifyTime ? new Date(entry.modifyTime).toISOString() : null,
+    }));
+  } finally {
+    await client.end();
+  }
+}
+
 module.exports = {
   upload,
   uploadAzure,
   uploadFtp,
   uploadSftp,
+  listFtp,
+  listSftp,
   getOriginalKey,
   getBannerKey,
   sanitizeForFilename,

@@ -42,7 +42,11 @@ async function handler(event) {
     // Process banner via image-tools (or local mock)
     const bannerFields = { nombre, cargo, email, telefono, website, linkedin };
     const bannerResult = await createBanner(originalUrl, nombre, imageBuffer, compositionParams || {}, customBackgroundUrl, templateId, bannerFields);
-    const bannerUrl = bannerResult.url;
+    // Cache-bust: some templates upload to a fixed filename per user, so a
+    // retry after a failed attempt would otherwise reuse the exact same URL
+    // and the browser would keep showing the previously cached image.
+    const cacheBustSeparator = bannerResult.url.includes('?') ? '&' : '?';
+    const bannerUrl = `${bannerResult.url}${cacheBustSeparator}v=${Date.now()}`;
 
     // Render template with all fields
     const fields = { nombre, cargo, email, telefono, website, linkedin, bannerUrl };

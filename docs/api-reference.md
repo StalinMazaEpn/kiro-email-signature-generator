@@ -61,6 +61,17 @@ Genera la firma completa: sube imagen, procesa banner con image-tools, compila H
 | `offsetX` | number | 0 | Desplazamiento horizontal en px |
 | `offsetY` | number | 0 | Desplazamiento vertical en px |
 
+**Modos rápidos del formulario (equivalentes en "Modo avanzado"):**
+
+En el formulario, "Centrado" y "Inferior" (75% centro-abajo) son atajos que fijan estos mismos `compositionParams`. Si se quiere partir de ahí y ajustar manualmente en "Modo avanzado", estos son los valores que hay que cargar en cada campo:
+
+| Modo rápido | `scalePercent` | `horizontalAlign` | `verticalAlign` | `paddingPercent` |
+|-------------|----------------|--------------------|------------------|-------------------|
+| Centrado | `100` | `center` | `center` | `0` |
+| Inferior (75% centro-abajo) | `75` | `center` | `bottom` | `0` |
+
+Fuente: `frontend/js/app.js` (`getCompositionParams`).
+
 ### Response (200)
 
 ```json
