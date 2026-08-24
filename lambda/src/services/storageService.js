@@ -136,14 +136,25 @@ async function uploadAzure(key, body, contentType) {
 
 
 /**
+ * Sanitizes a string for safe use inside a filename/URL path segment:
+ * strips anything but alphanumerics/underscore/hyphen and lowercases it.
+ * Shared by getOriginalKey/getBannerKey and templateStorage's custom
+ * filename patterns so both use the same, predictable output.
+ * @param {string} value
+ * @returns {string}
+ */
+function sanitizeForFilename(value) {
+  return String(value || '').replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase();
+}
+
+/**
  * Generate a storage key for an original image.
  * @param {string} nombre - User's name
  * @param {string} extension - File extension (png, jpg, etc.)
  * @returns {string}
  */
 function getOriginalKey(nombre, extension = 'png') {
-  const sanitized = nombre.replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase();
-  return `originals/${Date.now()}-${sanitized}.${extension}`;
+  return `originals/${Date.now()}-${sanitizeForFilename(nombre)}.${extension}`;
 }
 
 /**
@@ -152,14 +163,67 @@ function getOriginalKey(nombre, extension = 'png') {
  * @returns {string}
  */
 function getBannerKey(nombre) {
-  const sanitized = nombre.replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase();
-  return `banners/${Date.now()}-${sanitized}-banner.png`;
+  return `banners/${Date.now()}-${sanitizeForFilename(nombre)}-banner.png`;
+}
+
+/**
+ * Upload a file to an FTP (or explicit FTPS, via `secure`) server.
+ * Used for per-template custom banner destinations — see templateStorage.js.
+ * @param {{host: string, port?: number, secure?: boolean, remotePath: string, user: string, password: string}} conn
+ * @param {string} filename
+ * @param {Buffer} body
+ */
+async function uploadFtp(conn, filename, body) {
+  const { Client } = require('basic-ftp');
+  const { Readable } = require('stream');
+  const client = new Client(20000); // 20s timeout, matches other backends
+  try {
+    await client.access({
+      host: conn.host,
+      port: conn.port || 21,
+      secure: !!conn.secure,
+      user: conn.user,
+      password: conn.password,
+    });
+    await client.ensureDir(conn.remotePath);
+    await client.uploadFrom(Readable.from(body), filename);
+  } finally {
+    client.close();
+  }
+}
+
+/**
+ * Upload a file to an SFTP server.
+ * Used for per-template custom banner destinations — see templateStorage.js.
+ * @param {{host: string, port?: number, remotePath: string, user: string, password: string}} conn
+ * @param {string} filename
+ * @param {Buffer} body
+ */
+async function uploadSftp(conn, filename, body) {
+  const SftpClient = require('ssh2-sftp-client');
+  const client = new SftpClient();
+  try {
+    await client.connect({
+      host: conn.host,
+      port: conn.port || 22,
+      username: conn.user,
+      password: conn.password,
+      readyTimeout: 20000,
+    });
+    const remoteFilePath = `${conn.remotePath.replace(/\/$/, '')}/${filename}`;
+    await client.put(body, remoteFilePath);
+  } finally {
+    await client.end();
+  }
 }
 
 module.exports = {
   upload,
   uploadAzure,
+  uploadFtp,
+  uploadSftp,
   getOriginalKey,
   getBannerKey,
+  sanitizeForFilename,
   LOCAL_STORAGE_DIR,
 };

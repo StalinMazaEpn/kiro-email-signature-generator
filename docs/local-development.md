@@ -291,6 +291,76 @@ El validador ejecuta 8 reglas sobre el HTML de un template:
 | Admin no permite login | Verifica que `ADMIN_PASSWORD_HASH` está en `.env` y reinicia el server |
 | image-tools falla | Normal en local — el sistema usa fallback automático |
 
+## Storage personalizado por plantilla (banner)
+
+Cada plantilla vive en `lambda/templates/{id}/template.mustache` (las privadas, en `lambda/templates/private/{id}/`). Junto al `.mustache` puedes agregar un `config.json` opcional para que **solo el banner ya procesado** de esa plantilla se suba a un FTP/SFTP propio en vez del storage global (`STORAGE_PROVIDER`). La imagen original que sube el usuario nunca se ve afectada por esto.
+
+```json
+{
+  "banner": {
+    "storage": {
+      "enabled": true,
+      "type": "ftp",
+      "host": "ftp.clienteX.com",
+      "port": 21,
+      "secure": false,
+      "remotePath": "/public_html/banners",
+      "publicBaseUrl": "https://clienteX.com/banners"
+    },
+    "filenamePattern": "{nombre}-{timestamp}.{ext}"
+  }
+}
+```
+
+- `remotePath` (ruta del lado FTP) y `publicBaseUrl` (prefijo HTTP que ya sabes que sirve esos archivos) son independientes — el segundo no se deriva del primero.
+- `filenamePattern` soporta estos placeholders (con `nombre: "María López"`, `email: "maria.lopez@empresa.com"` de ejemplo):
+
+  | Placeholder | Resultado | Nota |
+  |---|---|---|
+  | `{nombre}` | `mar_a_l_pez` | saneo total: todo lo que no sea letra/número queda como `_`, **incluidos los acentos** (se pierden, no se transliteran) |
+  | `{nombreDot}` | `maria.lopez` | pensado para nombres de archivo tipo "firstname.lastname": quita acentos (á→a) en vez de perderlos, minúsculas, palabras unidas con `.` |
+  | `{email}` | `maria_lopez_empresa_com` | saneo total del email completo, incluye `@` y el dominio |
+  | `{emailUser}` | `maria.lopez` | **solo la parte antes del `@`**, conservando los puntos — úsalo si quieres armar tú el dominio/sufijo a mano en el pattern (ej. `"{emailUser}@miempresa.it.{ext}"`) |
+  | `{cargo}` | saneo total, igual que `{nombre}` | |
+  | `{timestamp}` | `1755780000000` (`Date.now()`) | evita que se sobrescriba el mismo archivo entre generaciones |
+  | `{ext}` | `png`/`jpg`/`webp` | según el `contentType` real del banner generado |
+
+  Regla rápida: si necesitas literales como `@` o `.` en el resultado (ej. `nombre@dominio.png`), usa `{emailUser}`/`{nombreDot}` para la parte variable — `{email}`/`{nombre}` siempre los reemplazan por `_`.
+- **Nunca pongas credenciales en `config.json`** (se commitea con la plantilla). Van en `.env` como `FTP_<ID_EN_MAYUS>_USER` / `FTP_<ID_EN_MAYUS>_PASSWORD`.
+- Si la plantilla no tiene `config.json`, o no tiene `banner.storage`, o pones `"enabled": false`, se usa el storage global de siempre — sin cambios.
+- Si `enabled` es `true` (o lo omites) pero faltan credenciales o la subida FTP/SFTP falla, la generación de la firma **falla con un error claro** (no hay fallback silencioso a otra URL, para no entregar una firma con un banner roto).
+
+### Título personalizado (`<title>`) por plantilla
+
+Cuando el usuario descarga o abre la firma en una ventana nueva, el frontend envuelve el HTML en un documento completo con un `<title>`. Por defecto es `"Firma de Email"` para todas las plantillas, pero puedes personalizarlo en el mismo `config.json`:
+
+```json
+{
+  "head": {
+    "titlePattern": "Firma de {nombre} - handytec"
+  }
+}
+```
+
+- Acepta los mismos placeholders que los fields del formulario: `{nombre}`, `{cargo}`, `{email}`, `{telefono}`, `{website}`, `{linkedin}`.
+- El backend lo resuelve y lo devuelve como `pageTitle` en la respuesta de `/generate-signature` y `/preview-signature`; el frontend lo usa al armar el documento descargable. Si la plantilla no tiene `config.json` o no define `head.titlePattern`, se mantiene el título por defecto de siempre.
+
+### Banner con esquinas redondeadas (cápsula/círculo)
+
+El servicio externo `image-tools` acepta un parámetro `cornerRadiusPercent` (0-50) para redondear las esquinas de la imagen final; 50 da una forma de cápsula/píldora (o círculo perfecto si el banner es cuadrado). En vez de exponer ese número directamente, el `config.json` de la plantilla usa un simple booleano:
+
+```json
+{
+  "banner": {
+    "round": true
+  }
+}
+```
+
+- `round: true` → se envía `cornerRadiusPercent: 50` a image-tools.
+- `round: false` (o el campo ausente) → `cornerRadiusPercent: 0`, sin cambios (comportamiento de siempre).
+- Solo aplica cuando el banner se procesa vía el servicio remoto `image-tools` (requiere `IMAGE_TOOLS_URL` configurado y funcionando). En el fallback local (sin `image-tools`, que simplemente copia la foto original) no hay redondeo posible, porque ese camino nunca procesa píxeles — es una limitación del fallback, no un bug.
+
 ## Hacer un commit con otra identidad (sin tocar tu config global)
 
 Funciona igual en Windows (Git Bash, PowerShell o CMD). Usa `-c` para aplicar `user.name`/`user.email` solo a ese comando, sin cambiar la configuración global ni la del repo:

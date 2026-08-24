@@ -4,6 +4,8 @@ const fs = require('fs');
 const {
   render,
   loadTemplate,
+  loadTemplateConfig,
+  resolvePageTitle,
   getTemplateList,
   getTemplateVariables,
   TEMPLATES,
@@ -178,6 +180,78 @@ describe('templateEngine', () => {
 
     test('throws on unknown template', () => {
       expect(() => getTemplateVariables('nonexistent')).toThrow();
+    });
+  });
+
+  describe('loadTemplateConfig', () => {
+    test('returns null when the template has no config.json', () => {
+      expect(loadTemplateConfig('corporativa')).toBeNull();
+    });
+
+    test('throws on unknown templateId', () => {
+      expect(() => loadTemplateConfig('nonexistent')).toThrow('Unknown template');
+    });
+
+    test('parses a valid config.json', () => {
+      const spy = jest.spyOn(fs, 'existsSync').mockReturnValue(true);
+      const readSpy = jest.spyOn(fs, 'readFileSync').mockReturnValue(JSON.stringify({ banner: { filenamePattern: '{nombre}.{ext}' } }));
+      try {
+        expect(loadTemplateConfig('corporativa')).toEqual({ banner: { filenamePattern: '{nombre}.{ext}' } });
+      } finally {
+        spy.mockRestore();
+        readSpy.mockRestore();
+      }
+    });
+
+    test('throws a clear error on invalid JSON', () => {
+      const spy = jest.spyOn(fs, 'existsSync').mockReturnValue(true);
+      const readSpy = jest.spyOn(fs, 'readFileSync').mockReturnValue('{ not valid json');
+      try {
+        expect(() => loadTemplateConfig('corporativa')).toThrow('Invalid config.json');
+      } finally {
+        spy.mockRestore();
+        readSpy.mockRestore();
+      }
+    });
+  });
+
+  describe('resolvePageTitle', () => {
+    test('returns the default title when the template has no config.json', () => {
+      expect(resolvePageTitle('corporativa', sampleFields)).toBe('Firma de Email');
+    });
+
+    test('substitutes placeholders from a configured titlePattern', () => {
+      const spy = jest.spyOn(fs, 'existsSync').mockReturnValue(true);
+      const readSpy = jest.spyOn(fs, 'readFileSync').mockReturnValue(JSON.stringify({ head: { titlePattern: 'Firma de {nombre} - {cargo}' } }));
+      try {
+        expect(resolvePageTitle('corporativa', sampleFields)).toBe('Firma de Carlos Méndez - Tech Lead');
+      } finally {
+        spy.mockRestore();
+        readSpy.mockRestore();
+      }
+    });
+
+    test('HTML-escapes substituted values', () => {
+      const spy = jest.spyOn(fs, 'existsSync').mockReturnValue(true);
+      const readSpy = jest.spyOn(fs, 'readFileSync').mockReturnValue(JSON.stringify({ head: { titlePattern: 'Firma de {nombre}' } }));
+      try {
+        expect(resolvePageTitle('corporativa', { ...sampleFields, nombre: '<script>alert(1)</script>' }))
+          .toBe('Firma de &lt;script&gt;alert(1)&lt;/script&gt;');
+      } finally {
+        spy.mockRestore();
+        readSpy.mockRestore();
+      }
+    });
+
+    test('throws on an unknown titlePattern placeholder', () => {
+      const spy = jest.spyOn(fs, 'existsSync').mockReturnValue(true);
+      const readSpy = jest.spyOn(fs, 'readFileSync').mockReturnValue(JSON.stringify({ head: { titlePattern: '{unknown}' } }));
+      try {
+        expect(() => resolvePageTitle('corporativa', sampleFields)).toThrow('Unknown titlePattern placeholder');
+      } finally {
+        spy.mockRestore();
+        readSpy.mockRestore();
+      }
     });
   });
 });

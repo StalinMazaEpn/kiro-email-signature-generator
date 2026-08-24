@@ -18,9 +18,10 @@ const fs = require('fs');
 
 const { getConfig } = require('./src/utils/config');
 const { validateGenerateRequest, validatePreviewRequest, validateExtractRequest } = require('./src/utils/validation');
-const { render, getTemplateList, getTemplateVariables } = require('./src/services/templateEngine');
+const { render, resolvePageTitle, getTemplateList, getTemplateVariables } = require('./src/services/templateEngine');
 const { upload, getOriginalKey, LOCAL_STORAGE_DIR } = require('./src/services/storageService');
 const { createBanner } = require('./src/services/imageToolsClient');
+const { TemplateStorageConfigError } = require('./src/services/templateStorage');
 
 const app = express();
 const config = getConfig();
@@ -78,17 +79,20 @@ app.post('/generate-signature', async (req, res) => {
     }
 
     // Process banner (in local mode, uses the original as fallback)
-    const bannerResult = await createBanner(originalUrl, nombre, imageBuffer, compositionParams || {}, customBackgroundUrl);
+    const bannerFields = { nombre, cargo, email, telefono, website, linkedin };
+    const bannerResult = await createBanner(originalUrl, nombre, imageBuffer, compositionParams || {}, customBackgroundUrl, templateId, bannerFields);
     const bannerUrl = bannerResult.url;
 
     // Render template
     const fields = { nombre, cargo, email, telefono, website, linkedin, bannerUrl };
     const html = render(templateId, fields);
+    const pageTitle = resolvePageTitle(templateId, fields);
 
     console.log('[generate-signature] Enviando respuesta 200 al cliente (usedFallback:', bannerResult.usedFallback || false, ')');
     res.json({
       success: true,
       html,
+      pageTitle,
       bannerUrl,
       usedFallback: bannerResult.usedFallback || false,
       fallbackReason: bannerResult.fallbackReason || null
@@ -96,7 +100,8 @@ app.post('/generate-signature', async (req, res) => {
     console.log('[generate-signature] Respuesta enviada');
   } catch (err) {
     console.error('[generate-signature] Error:', err.message);
-    res.status(500).json({ success: false, error: err.message });
+    const statusCode = err instanceof TemplateStorageConfigError ? 400 : 500;
+    res.status(statusCode).json({ success: false, error: err.message });
   }
 });
 
@@ -122,8 +127,9 @@ app.post('/preview-signature', async (req, res) => {
     ).toString('base64');
     const fields = { nombre, cargo, email, telefono, website, linkedin, bannerUrl: placeholderBanner };
     const html = render(templateId, fields);
+    const pageTitle = resolvePageTitle(templateId, fields);
 
-    res.json({ success: true, html });
+    res.json({ success: true, html, pageTitle });
   } catch (err) {
     console.error('[preview-signature] Error:', err.message);
     res.status(500).json({ success: false, error: err.message });

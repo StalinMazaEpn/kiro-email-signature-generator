@@ -40,6 +40,31 @@ function loadTemplate(templateId) {
 }
 
 /**
+ * Load a template's optional config.json (sits next to its .mustache file,
+ * e.g. lambda/templates/corporativa/config.json). Used for per-template
+ * overrides such as a custom banner storage destination — see
+ * templateStorage.js. Returns null when the template has no config.json
+ * (the common case), since it's an opt-in override, not a requirement.
+ * @param {string} templateId
+ * @returns {object|null}
+ */
+function loadTemplateConfig(templateId) {
+  const filename = TEMPLATES[templateId];
+  if (!filename) {
+    throw new Error(`Unknown template: ${templateId}. Valid options: ${Object.keys(TEMPLATES).join(', ')}`);
+  }
+  const configPath = path.join(TEMPLATES_DIR, path.dirname(filename), 'config.json');
+  if (!fs.existsSync(configPath)) {
+    return null;
+  }
+  try {
+    return JSON.parse(fs.readFileSync(configPath, 'utf8'));
+  } catch (err) {
+    throw new Error(`Invalid config.json for template "${templateId}" (${configPath}): ${err.message}`);
+  }
+}
+
+/**
  * Templates whose .mustache was imported as-is from an external source and
  * uses its own field schema (firstname/lastname/position/phone/imageBannerUrl/...)
  * instead of the app's standard one (nombre/cargo/telefono/bannerUrl/...).
@@ -117,6 +142,43 @@ function buildLegacyData(fields) {
   };
 }
 
+const DEFAULT_PAGE_TITLE = 'Firma de Email';
+
+/**
+ * Escapes the characters that would break out of an HTML <title> if a field
+ * (e.g. nombre) contained them — resolvePageTitle's result is consumed
+ * as-is by the frontend (wrapSignatureHtml), not through Mustache's
+ * auto-escaping, so it needs to sanitize for HTML itself.
+ */
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[c]));
+}
+
+/**
+ * Resolves the <title> to use when a template's rendered HTML is wrapped
+ * into a full downloadable document (see frontend's wrapSignatureHtml).
+ * Templates opt into a custom, placeholder-driven title via their
+ * config.json (`head.titlePattern`, e.g. "Firma de {nombre}"); without one,
+ * every template keeps the app's original hardcoded title.
+ * @param {string} templateId
+ * @param {object} fields - { nombre, cargo, email, ... }
+ * @returns {string}
+ */
+function resolvePageTitle(templateId, fields) {
+  const config = loadTemplateConfig(templateId);
+  const pattern = config?.head?.titlePattern;
+  if (!pattern) return DEFAULT_PAGE_TITLE;
+
+  return pattern.replace(/\{(\w+)\}/g, (match, key) => {
+    if (!(key in fields)) {
+      throw new Error(`Unknown titlePattern placeholder "{${key}}"`);
+    }
+    return escapeHtml(fields[key]);
+  });
+}
+
 /**
  * Render a template with the given fields.
  * @param {string} templateId
@@ -170,6 +232,8 @@ function getTemplateVariables(templateId) {
 module.exports = {
   render,
   loadTemplate,
+  loadTemplateConfig,
+  resolvePageTitle,
   getTemplateList,
   getTemplateVariables,
   TEMPLATES,

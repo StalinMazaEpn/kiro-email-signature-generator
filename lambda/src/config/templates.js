@@ -14,28 +14,28 @@
 const TEMPLATE_CATALOG = [
   {
     id: 'corporativa',
-    file: 'corporativa.mustache',
+    file: 'corporativa/template.mustache',
     name: 'Corporativa',
     description: 'Layout de 2 columnas: imagen izquierda, datos derecha. Paleta neutra gris/azul.',
     requiredFields: ['nombre', 'cargo', 'email', 'telefono', 'bannerUrl'],
   },
   {
     id: 'moderna-banner',
-    file: 'moderna-banner.mustache',
+    file: 'moderna-banner/template.mustache',
     name: 'Moderna con Banner',
     description: 'Layout de 2 columnas: foto con degradado izquierda, datos derecha con iconos sociales.',
     requiredFields: ['nombre', 'cargo', 'email', 'telefono', 'bannerUrl'],
   },
   {
     id: 'minimalista',
-    file: 'minimalista.mustache',
+    file: 'minimalista/template.mustache',
     name: 'Minimalista',
     description: 'Una fila compacta: avatar circular + nombre, cargo y contacto inline.',
     requiredFields: ['nombre', 'cargo', 'email', 'telefono', 'bannerUrl'],
   },
   {
     id: 'signature-business',
-    file: 'private/signature_business.mustache',
+    file: 'private/signature-business/template.mustache',
     name: 'Business',
     description: 'Foto cuadrada 162x162 a la izquierda, información del branding, datos con acento verde y iconos de LinkedIn/X.',
     requiredFields: [
@@ -45,7 +45,7 @@ const TEMPLATE_CATALOG = [
   },
   {
     id: 'signature-company',
-    file: 'private/signature_company.mustache',
+    file: 'private/signature-company/template.mustache',
     name: 'Company',
     description: 'Foto grande 240x184 con fondo degradado y esquinas redondeadas, datos a la derecha e iconos de LinkedIn/X.',
     requiredFields: [

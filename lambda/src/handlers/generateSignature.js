@@ -3,7 +3,8 @@
 const { validateGenerateRequest } = require('../utils/validation');
 const { upload, getOriginalKey } = require('../services/storageService');
 const { createBanner } = require('../services/imageToolsClient');
-const { render, TemplateNotFoundError } = require('../services/templateEngine');
+const { render, resolvePageTitle, TemplateNotFoundError } = require('../services/templateEngine');
+const { TemplateStorageConfigError } = require('../services/templateStorage');
 
 /**
  * Lambda handler: Generate a full email signature.
@@ -39,16 +40,19 @@ async function handler(event) {
     }
 
     // Process banner via image-tools (or local mock)
-    const bannerResult = await createBanner(originalUrl, nombre, imageBuffer, compositionParams || {}, customBackgroundUrl);
+    const bannerFields = { nombre, cargo, email, telefono, website, linkedin };
+    const bannerResult = await createBanner(originalUrl, nombre, imageBuffer, compositionParams || {}, customBackgroundUrl, templateId, bannerFields);
     const bannerUrl = bannerResult.url;
 
     // Render template with all fields
     const fields = { nombre, cargo, email, telefono, website, linkedin, bannerUrl };
     const html = render(templateId, fields);
+    const pageTitle = resolvePageTitle(templateId, fields);
 
-    return response(200, { 
-      success: true, 
-      html, 
+    return response(200, {
+      success: true,
+      html,
+      pageTitle,
       bannerUrl,
       usedFallback: bannerResult.usedFallback || false,
       fallbackReason: bannerResult.fallbackReason || null
@@ -57,6 +61,9 @@ async function handler(event) {
     console.error('[generateSignature] Error:', err.message);
     if (err instanceof TemplateNotFoundError) {
       return response(404, { success: false, error: err.message });
+    }
+    if (err instanceof TemplateStorageConfigError) {
+      return response(400, { success: false, error: err.message });
     }
     return response(500, { success: false, error: err.message });
   }

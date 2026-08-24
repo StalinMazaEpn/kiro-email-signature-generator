@@ -1,7 +1,11 @@
 'use strict';
 
 const { getConfig } = require('../utils/config');
-const { upload, getBannerKey } = require('./storageService');
+const { loadTemplateConfig } = require('./templateEngine');
+const { uploadBanner } = require('./templateStorage');
+
+/** Full pill/circle rounding, per image-tools' cornerRadiusPercent contract (0-50, 50 = fully rounded). */
+const FULL_ROUND_CORNER_RADIUS_PERCENT = 50;
 
 /**
  * Call the image-tools external API to process a photo into a banner.
@@ -13,10 +17,18 @@ const { upload, getBannerKey } = require('./storageService');
  * @param {Buffer|null} originalImageBuffer - Original image buffer (used in local mode fallback)
  * @param {object} compositionParams - Image composition parameters (scalePercent, horizontalAlign, verticalAlign, paddingPercent, offsetX, offsetY)
  * @param {string|null} customBackgroundUrl - Optional custom background image URL (overrides BACKGROUND_TEMPLATE_URL)
+ * @param {string} templateId - Selected template id (decides the banner's storage destination, see templateStorage.js, and whether it's rounded via config.json's banner.round)
+ * @param {object} fields - Signature fields (nombre, cargo, email, ...), used for the banner's storage destination/filename
  * @returns {Promise<string>} Public URL of the processed banner
  */
-async function createBanner(sourceImageUrl, nombre, originalImageBuffer = null, compositionParams = {}, customBackgroundUrl = null) {
+async function createBanner(sourceImageUrl, nombre, originalImageBuffer = null, compositionParams = {}, customBackgroundUrl = null, templateId, fields) {
   const config = getConfig();
+  // banner.round in the template's config.json (see templateStorage.js docs)
+  // opts into fully rounded corners (pill/circle) — only image-tools (the
+  // remote path) can actually apply it; the local fallback just copies the
+  // original photo, so it has nothing to round.
+  const templateConfig = templateId ? loadTemplateConfig(templateId) : null;
+  const round = !!templateConfig?.banner?.round;
 
   // A remote image-tools service (whether local or in the cloud) can only ever
   // fetch a URL it can reach: an HTTPS, publicly resolvable address. A
@@ -39,14 +51,14 @@ async function createBanner(sourceImageUrl, nombre, originalImageBuffer = null, 
       'URL pública como base de storage.\n' +
       '  Se usará el fallback local (foto original sin banner procesado) para continuar la prueba.'
     );
-    const url = await createBannerLocal(sourceImageUrl, nombre, originalImageBuffer);
+    const url = await createBannerLocal(sourceImageUrl, nombre, originalImageBuffer, templateId, fields);
     return { url, usedFallback: true, fallbackReason: reason };
   }
 
   // Try remote image-tools if URL is configured
   if (config.imageToolsUrl && (config.backgroundTemplateUrl || customBackgroundUrl)) {
     try {
-      const url = await createBannerRemote(sourceImageUrl, nombre, compositionParams, customBackgroundUrl);
+      const url = await createBannerRemote(sourceImageUrl, nombre, compositionParams, customBackgroundUrl, templateId, fields, round);
       return { url, usedFallback: false };
     } catch (err) {
       console.warn(
@@ -58,13 +70,13 @@ async function createBanner(sourceImageUrl, nombre, originalImageBuffer = null, 
         'público, o un túnel HTTPS (ngrok) hacia tu servidor local.'
       );
       // Fallback: use original image as banner (works in both local and aws modes)
-      const url = await createBannerLocal(sourceImageUrl, nombre, originalImageBuffer);
+      const url = await createBannerLocal(sourceImageUrl, nombre, originalImageBuffer, templateId, fields);
       return { url, usedFallback: true, fallbackReason: err.message };
     }
   }
 
   // No image-tools configured: use fallback
-  const url = await createBannerLocal(sourceImageUrl, nombre, originalImageBuffer);
+  const url = await createBannerLocal(sourceImageUrl, nombre, originalImageBuffer, templateId, fields);
   return { url, usedFallback: true, fallbackReason: 'IMAGE_TOOLS_URL not configured' };
 }
 
@@ -125,11 +137,10 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = DEFAULT_FETCH_TIM
  * Local mock: copies the original as the "banner" for dev purposes.
  * This lets you test the full flow without needing the external image-tools service.
  */
-async function createBannerLocal(sourceImageUrl, nombre, originalImageBuffer) {
+async function createBannerLocal(sourceImageUrl, nombre, originalImageBuffer, templateId, fields) {
   if (originalImageBuffer) {
-    const bannerKey = getBannerKey(nombre);
-    const bannerUrl = await upload(bannerKey, originalImageBuffer, 'image/png');
-    return bannerUrl;
+    const { url } = await uploadBanner(templateId, fields, originalImageBuffer, 'image/png');
+    return url;
   }
   // If no buffer provided, just return the source URL as-is for preview
   return sourceImageUrl;
@@ -140,7 +151,7 @@ async function createBannerLocal(sourceImageUrl, nombre, originalImageBuffer) {
  * POST to image-tools with imageUrl + backgroundUrl, get download_url back,
  * download the result, upload to S3.
  */
-async function createBannerRemote(sourceImageUrl, nombre, compositionParams = {}, customBackgroundUrl = null) {
+async function createBannerRemote(sourceImageUrl, nombre, compositionParams = {}, customBackgroundUrl = null, templateId, fields, round = false) {
   const config = getConfig();
 
   if (!config.imageToolsUrl) {
@@ -162,6 +173,7 @@ async function createBannerRemote(sourceImageUrl, nombre, compositionParams = {}
     paddingPercent: compositionParams.paddingPercent || 0,
     offsetX: compositionParams.offsetX || 0,
     offsetY: compositionParams.offsetY || 0,
+    cornerRadiusPercent: round ? FULL_ROUND_CORNER_RADIUS_PERCENT : 0,
   };
 
   const headers = {
@@ -251,8 +263,7 @@ async function createBannerRemote(sourceImageUrl, nombre, compositionParams = {}
   console.log(`[imageToolsClient] Buffer leído (${bannerBuffer.length} bytes), subiendo a storage (${config.storageProvider})...`);
 
   // Step 3: Upload banner to storage
-  const bannerKey = getBannerKey(nombre);
-  const bannerUrl = await upload(bannerKey, bannerBuffer, 'image/png');
+  const { url: bannerUrl } = await uploadBanner(templateId, fields, bannerBuffer, 'image/png');
   console.log('[imageToolsClient] Upload de banner completo ->', bannerUrl);
 
   return bannerUrl;

@@ -1,7 +1,7 @@
 'use strict';
 
 const { validatePreviewRequest } = require('../utils/validation');
-const { render, TemplateNotFoundError } = require('../services/templateEngine');
+const { render, resolvePageTitle, TemplateNotFoundError } = require('../services/templateEngine');
 
 const PLACEHOLDER_BANNER = 'data:image/svg+xml;base64,' + Buffer.from(
   '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="120">' +
@@ -32,8 +32,9 @@ async function handler(event) {
     // Use placeholder banner — no image processing
     const fields = { nombre, cargo, email, telefono, website, linkedin, bannerUrl: PLACEHOLDER_BANNER };
     const html = render(templateId, fields);
+    const pageTitle = resolvePageTitle(templateId, fields);
 
-    return response(200, { success: true, html });
+    return response(200, { success: true, html, pageTitle });
   } catch (err) {
     console.error('[previewSignature] Error:', err.message);
     if (err instanceof TemplateNotFoundError) {

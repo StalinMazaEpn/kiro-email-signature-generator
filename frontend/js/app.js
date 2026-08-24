@@ -24,6 +24,8 @@
 
   // Store generated HTML for clipboard/download/open
   let generatedHtml = '';
+  // <title> to use when wrapping the signature into a full document (download/open) — comes from the backend, which resolves it per-template (see config.json's head.titlePattern)
+  let generatedPageTitle = 'Firma de Email';
 
   // Cached cropped images to avoid re-cropping on every generate
   let cachedProfileCrop = null;
@@ -445,6 +447,7 @@
       }
 
       generatedHtml = result.html;
+      generatedPageTitle = result.pageTitle || 'Firma de Email';
 
       // Show which template was used
       const templateSelect = document.getElementById('templateId');
@@ -500,7 +503,7 @@
   function handleDownload() {
     if (!generatedHtml) return;
 
-    const fullHtml = wrapSignatureHtml(generatedHtml);
+    const fullHtml = wrapSignatureHtml(generatedHtml, generatedPageTitle);
     const blob = new Blob([fullHtml], { type: 'text/html;charset=utf-8' });
     const url = URL.createObjectURL(blob);
 
@@ -521,7 +524,7 @@
   function handleOpenWindow() {
     if (!generatedHtml) return;
 
-    const fullHtml = wrapSignatureHtml(generatedHtml);
+    const fullHtml = wrapSignatureHtml(generatedHtml, generatedPageTitle);
     const newWindow = window.open('', '_blank');
     if (newWindow) {
       newWindow.document.open();
@@ -554,13 +557,13 @@
   /**
    * Wrap signature HTML fragment in a full HTML document for download/open.
    */
-  function wrapSignatureHtml(html) {
+  function wrapSignatureHtml(html, pageTitle) {
     return `<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Firma de Email</title>
+  <title>${pageTitle || 'Firma de Email'}</title>
   <style>body { margin: 20px; font-family: Arial, sans-serif; }</style>
 </head>
 <body>

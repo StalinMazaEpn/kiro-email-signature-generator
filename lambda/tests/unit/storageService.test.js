@@ -5,7 +5,39 @@ const fs = require('fs');
 
 process.env.PORT = '3999';
 
-const { upload, getOriginalKey, getBannerKey, LOCAL_STORAGE_DIR } = require('../../src/services/storageService');
+const {
+  upload,
+  getOriginalKey,
+  getBannerKey,
+  uploadFtp,
+  uploadSftp,
+  sanitizeForFilename,
+  LOCAL_STORAGE_DIR,
+} = require('../../src/services/storageService');
+
+// Mock basic-ftp (uploadFtp uses a lazy require)
+const mockFtpAccess = jest.fn().mockResolvedValue(undefined);
+const mockFtpEnsureDir = jest.fn().mockResolvedValue(undefined);
+const mockFtpUploadFrom = jest.fn().mockResolvedValue(undefined);
+const mockFtpClose = jest.fn();
+jest.mock('basic-ftp', () => ({
+  Client: jest.fn().mockImplementation(() => ({
+    access: mockFtpAccess,
+    ensureDir: mockFtpEnsureDir,
+    uploadFrom: mockFtpUploadFrom,
+    close: mockFtpClose,
+  })),
+}));
+
+// Mock ssh2-sftp-client (uploadSftp uses a lazy require)
+const mockSftpConnect = jest.fn().mockResolvedValue(undefined);
+const mockSftpPut = jest.fn().mockResolvedValue(undefined);
+const mockSftpEnd = jest.fn().mockResolvedValue(undefined);
+jest.mock('ssh2-sftp-client', () => jest.fn().mockImplementation(() => ({
+  connect: mockSftpConnect,
+  put: mockSftpPut,
+  end: mockSftpEnd,
+})));
 
 // Mock Azure Storage SDK (uploadAzure uses a lazy require)
 const mockBlobUpload = jest.fn().mockResolvedValue({ requestId: 'mock-upload' });
@@ -104,5 +136,70 @@ describe('storageService (azure mode)', () => {
   });
 });
 
+  });
+});
+
+describe('sanitizeForFilename', () => {
+  test('strips special characters and lowercases', () => {
+    expect(sanitizeForFilename('María José López')).toBe('mar_a_jos__l_pez');
+  });
+
+  test('handles empty/undefined input', () => {
+    expect(sanitizeForFilename(undefined)).toBe('');
+    expect(sanitizeForFilename('')).toBe('');
+  });
+});
+
+describe('uploadFtp', () => {
+  afterEach(() => jest.clearAllMocks());
+
+  test('connects with the given host/credentials and uploads the buffer', async () => {
+    const conn = { host: 'ftp.clientex.com', port: 21, secure: false, remotePath: '/banners', user: 'u', password: 'p' };
+    await uploadFtp(conn, 'file.png', Buffer.from('data'));
+
+    expect(mockFtpAccess).toHaveBeenCalledWith(expect.objectContaining({
+      host: 'ftp.clientex.com',
+      port: 21,
+      secure: false,
+      user: 'u',
+      password: 'p',
+    }));
+    expect(mockFtpEnsureDir).toHaveBeenCalledWith('/banners');
+    expect(mockFtpUploadFrom).toHaveBeenCalledWith(expect.anything(), 'file.png');
+    expect(mockFtpClose).toHaveBeenCalled();
+  });
+
+  test('closes the client even when the upload fails', async () => {
+    mockFtpUploadFrom.mockRejectedValueOnce(new Error('boom'));
+    const conn = { host: 'ftp.clientex.com', remotePath: '/banners', user: 'u', password: 'p' };
+
+    await expect(uploadFtp(conn, 'file.png', Buffer.from('data'))).rejects.toThrow('boom');
+    expect(mockFtpClose).toHaveBeenCalled();
+  });
+});
+
+describe('uploadSftp', () => {
+  afterEach(() => jest.clearAllMocks());
+
+  test('connects with the given host/credentials and uploads the buffer', async () => {
+    const conn = { host: 'sftp.clientex.com', port: 22, remotePath: '/banners', user: 'u', password: 'p' };
+    await uploadSftp(conn, 'file.png', Buffer.from('data'));
+
+    expect(mockSftpConnect).toHaveBeenCalledWith(expect.objectContaining({
+      host: 'sftp.clientex.com',
+      port: 22,
+      username: 'u',
+      password: 'p',
+    }));
+    expect(mockSftpPut).toHaveBeenCalledWith(expect.any(Buffer), '/banners/file.png');
+    expect(mockSftpEnd).toHaveBeenCalled();
+  });
+
+  test('ends the connection even when the upload fails', async () => {
+    mockSftpPut.mockRejectedValueOnce(new Error('boom'));
+    const conn = { host: 'sftp.clientex.com', remotePath: '/banners', user: 'u', password: 'p' };
+
+    await expect(uploadSftp(conn, 'file.png', Buffer.from('data'))).rejects.toThrow('boom');
+    expect(mockSftpEnd).toHaveBeenCalled();
   });
 });
