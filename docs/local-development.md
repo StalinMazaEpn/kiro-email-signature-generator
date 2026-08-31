@@ -117,6 +117,34 @@ BACKGROUND_TEMPLATE_URL=https://tu-bucket.s3.amazonaws.com/backgrounds/template.
 
 Si `IMAGE_TOOLS_URL` está configurado pero el servicio no responde, el sistema automáticamente usa la imagen original como banner (fallback). La respuesta incluye `usedFallback: true` para que el frontend informe al usuario.
 
+## Configurar Azure Storage (alternativa a S3)
+
+Si prefieres usar Azure Storage en vez de S3 o filesystem local:
+
+```env
+STORAGE_PROVIDER=azure
+AZURE_ACCOUNT_NAME=tucuentastorage
+AZURE_ACCOUNT_KEY=tu-clave-de-acceso-primaria-o-secundaria
+AZURE_CONTAINER_NAME=signatures
+```
+
+**Pasos previos:**
+
+1. Crea una cuenta de Azure Storage (tipo StorageV2)
+2. Crea un container llamado `signatures` (o el nombre que prefieras)
+3. Configura el container con acceso público de lectura (Blob)
+4. Copia el nombre de la cuenta y la clave de acceso (Settings → Access keys)
+
+El servicio guardará las imágenes en la misma estructura de carpetas que S3:
+- `originals/` — fotos originales
+- `banners/` — banners procesados
+- `backgrounds/` — fondos personalizados
+
+Las URLs públicas siguen el formato:
+```
+https://<ACCOUNT_NAME>.blob.core.windows.net/<CONTAINER_NAME>/banners/...
+```
+
 ## Generar password hash para admin
 
 El panel admin requiere un hash SHA-256 configurado en la variable `ADMIN_PASSWORD_HASH`:
@@ -279,6 +307,52 @@ El validador ejecuta 8 reglas sobre el HTML de un template:
 - **4 errores:** style blocks, scripts, external images, variables requeridas faltantes
 - **4 warnings:** ancho excesivo, tablas anidadas profundas, media queries, links sin protocolo
 
+## Script de diagnóstico de Azure OpenAI
+
+Si tienes problemas de conexión con Azure OpenAI (error 400 "API version not supported" o errores de formato de endpoint), usa el script de diagnóstico:
+
+```powershell
+node scripts/diagnose-azure.js
+```
+
+**¿Qué hace?**
+- Lee tu configuración de `.env`
+- Muestra el endpoint, deployment y formato detectado (legacy vs openai-compatible)
+- Prueba múltiples versiones de API (`2024-02-01`, `2024-10-21`, `2025-03-01-preview`, etc.)
+- Indica cuál versión responde OK con tu recurso
+
+**Ejemplos:**
+
+```powershell
+# Probar versiones por defecto
+node scripts/diagnose-azure.js
+
+# Probar versiones específicas
+node scripts/diagnose-azure.js 2025-03-01-preview 2025-08-01-preview
+
+# Probar la Responses API en vez de Chat Completions
+node scripts/diagnose-azure.js --responses
+```
+
+**Salida esperada:**
+
+```
+=== Diagnóstico Azure OpenAI ===
+APIVersion configurada : 2024-10-21
+Endpoint (base)        : https://tu-recurso.openai.azure.com
+Deployment             : gpt-4o-mini
+Formato detectado      : legacy (por recurso)
+
+OK  api-version=2024-10-21        [200] {"id":"chatcmpl-..."}
+ERR api-version=2025-03-01-preview [400] {"error":{"code":"API version not supported"}}
+```
+
+Una vez identificada la versión que funciona, actualiza tu `.env`:
+
+```env
+AZURE_OPENAI_API_VERSION=2024-10-21
+```
+
 ## Troubleshooting
 
 | Problema | Solución |
@@ -360,6 +434,41 @@ El servicio externo `image-tools` acepta un parámetro `cornerRadiusPercent` (0-
 - `round: true` → se envía `cornerRadiusPercent: 50` a image-tools.
 - `round: false` (o el campo ausente) → `cornerRadiusPercent: 0`, sin cambios (comportamiento de siempre).
 - Solo aplica cuando el banner se procesa vía el servicio remoto `image-tools` (requiere `IMAGE_TOOLS_URL` configurado y funcionando). En el fallback local (sin `image-tools`, que simplemente copia la foto original) no hay redondeo posible, porque ese camino nunca procesa píxeles — es una limitación del fallback, no un bug.
+
+### Ejemplo configuración FTP para plantilla específica
+
+Para una plantilla con `id: "cliente-acme"`, agrega al `.env`:
+
+```env
+# Credenciales FTP para la plantilla "cliente-acme"
+FTP_CLIENTE_ACME_USER=ftpuser
+FTP_CLIENTE_ACME_PASSWORD=clave-secreta-123
+
+# Si la plantilla es "signature-company":
+FTP_SIGNATURE_COMPANY_USER=usuario_ftp
+FTP_SIGNATURE_COMPANY_PASSWORD=password_seguro
+```
+
+El `config.json` de la plantilla ya tiene host, puerto y rutas (se commitea con el código):
+
+```json
+{
+  "banner": {
+    "storage": {
+      "enabled": true,
+      "type": "ftp",
+      "host": "ftp.cliente-acme.com",
+      "port": 21,
+      "secure": false,
+      "remotePath": "/public_html/firmas",
+      "publicBaseUrl": "https://cliente-acme.com/firmas"
+    },
+    "filenamePattern": "{emailUser}@acme.com.{ext}"
+  }
+}
+```
+
+El sistema buscará automáticamente las variables `FTP_<ID_MAYUS>_USER` y `FTP_<ID_MAYUS>_PASSWORD` según el `id` de la plantilla.
 
 ## Hacer un commit con otra identidad (sin tocar tu config global)
 

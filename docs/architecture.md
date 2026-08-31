@@ -160,11 +160,30 @@ sequenceDiagram
 
 ### Templates Mustache
 
+El sistema incluye 5 plantillas de firma con diferentes estilos y tamaños de imagen:
+
+#### Templates públicas (visibles en el frontend para todos los usuarios)
+
 | Plantilla | Tamaño imagen | Descripción |
 |-----------|---------------|-------------|
-| `corporativa` | 130×160px | Portrait clásico, diseño conservador |
-| `moderna-banner` | 180×210px | Portrait grande, diseño con banner destacado |
-| `minimalista` | 56×56px | Foto cuadrada pequeña, diseño limpio |
+| `corporativa` | 130×160px | Portrait clásico, diseño conservador con paleta gris/azul |
+| `moderna-banner` | 180×210px | Portrait grande, diseño con banner destacado e iconos sociales |
+| `minimalista` | 56×56px | Foto cuadrada pequeña, diseño limpio y compacto |
+
+#### Templates privadas (directorio `/lambda/templates/private/`)
+
+| Plantilla | Tamaño imagen | Descripción |
+|-----------|---------------|-------------|
+| `signature-business` | 162×162px | Foto cuadrada, branding destacado, acento verde, iconos LinkedIn/X |
+| `signature-company` | 240×184px | Foto grande con fondo degradado, esquinas redondeadas, iconos LinkedIn/X |
+
+**Características especiales de templates privadas:**
+- Configuración personalizada via `config.json` (storage FTP/SFTP propio, título HTML custom, esquinas redondeadas)
+- Campos específicos del cliente (`firstname`, `lastname`, `positionOriginal`, etc.)
+- No aparecen en el selector público del frontend (requieren URL directa o integración custom)
+- Credenciales FTP se configuran en `.env` siguiendo el patrón `FTP_<ID_MAYUS>_USER` / `FTP_<ID_MAYUS>_PASSWORD`
+
+Ver [`docs/local-development.md`](../docs/local-development.md) → "Storage personalizado por plantilla" para detalles sobre cómo configurar storage FTP/SFTP.
 
 ### Image-Tools Client
 
@@ -172,16 +191,26 @@ El servicio `imageToolsClient.js` maneja la composición de persona sobre fondo:
 
 - **Modo producción (aws):** Llama al servicio externo siempre
 - **Modo local:** Intenta el servicio real si `IMAGE_TOOLS_URL` está configurado; si falla o no existe, copia la imagen original como banner (fallback)
-- **Parámetros de composición:** `scalePercent`, `horizontalAlign`, `verticalAlign`, `paddingPercent`, `offsetX`, `offsetY`
+- **Parámetros de composición:** `scalePercent`, `horizontalAlign`, `verticalAlign`, `paddingPercent`, `offsetX`, `offsetY`, `cornerRadiusPercent` (para esquinas redondeadas)
 - **Respuesta incluye:** `{ url, usedFallback, fallbackReason }` para que el frontend informe al usuario
+
+**Presets de composición disponibles en el formulario:**
+
+| Preset | `scalePercent` | `horizontalAlign` | `verticalAlign` | `paddingPercent` | Uso típico |
+|--------|----------------|-------------------|------------------|-------------------|------------|
+| Centrado | 100 | `center` | `center` | 0 | Foto ocupa todo el espacio, centrada |
+| Inferior (75%) | 75 | `center` | `bottom` | 0 | Persona al 75% del tamaño, alineada abajo-centro |
+| Avanzado (manual) | Custom | Custom | Custom | Custom | Control total de todos los parámetros |
+
+El modo "Avanzado" del formulario permite ajustar manualmente todos estos valores, útil para afinar la composición después de probar un preset.
 
 ## Modo local vs producción
 
 | Componente | Local (`STORAGE_PROVIDER=local`, default) | Producción (`STORAGE_PROVIDER=s3` o `azure`) |
 |------------|--------------------------------------------|-----------------------------------------------|
 | Servidor | Express en localhost:3005 | Lambda + API Gateway HTTP |
-| Storage | Filesystem `lambda/local-storage/` | S3 bucket público |
-| URLs de imagen | `http://localhost:3005/storage/...` | `https://<bucket>.s3.amazonaws.com/...` |
+| Storage | Filesystem `lambda/local-storage/` | S3 bucket público o Azure Storage container |
+| URLs de imagen | `http://localhost:3005/storage/...` | `https://<bucket>.s3.amazonaws.com/...` o `https://<account>.blob.core.windows.net/...` |
 | Image-tools | Intenta real si configurado → fallback copia original | Llama API externa (error si falla) |
 | AI Provider | Azure OpenAI real (si hay creds) / Mock regex | Bedrock o Azure según config |
 | Frontend hosting | Servido por Express estático | S3 Static Website |

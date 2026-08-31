@@ -150,6 +150,19 @@ Preview rápido sin procesar imagen. Renderiza template con un banner placeholde
 
 Extrae campos de contacto de un texto libre usando IA (o regex mock si no hay credenciales).
 
+**Providers soportados:**
+- **Azure OpenAI**: Usa `gpt-4o-mini` (o el deployment configurado) via REST API
+  - Soporta dos formatos de endpoint:
+    - **Legacy** (por recurso): `https://<nombre>.openai.azure.com`
+    - **Nuevo** (AI Services): `https://<nombre>.services.ai.azure.com/openai/v1`
+  - Dos APIs disponibles:
+    - `chat`: Chat Completions API (funciona con ambos formatos)
+    - `responses`: Responses API con streaming (solo endpoint nuevo)
+- **AWS Bedrock**: Usa Claude Haiku via SDK nativo
+- **Mock (fallback)**: Extracción por regex si no hay credenciales configuradas
+
+> 💡 Si tienes problemas con Azure OpenAI (error 400 "API version not supported"), usa el script de diagnóstico: `node scripts/diagnose-azure.js`
+
 ### Request
 
 ```json
@@ -201,6 +214,8 @@ Extrae campos de contacto de un texto libre usando IA (o regex mock si no hay cr
 ## GET /templates
 
 Lista las plantillas disponibles con metadata.
+
+**Nota**: Este endpoint solo retorna las 3 plantillas públicas (`corporativa`, `moderna-banner`, `minimalista`). Las plantillas privadas (`signature-business`, `signature-company`) existen en el sistema pero no se exponen en este listado para mantenerlas como templates especiales para clientes específicos.
 
 ### Response (200)
 
@@ -312,3 +327,45 @@ Content-Type: application/json
 ```
 
 Límite de body: 15MB (para soportar imágenes base64).
+
+---
+
+## Límites y validaciones
+
+### Tamaños y formatos
+
+| Límite | Valor | Validación |
+|--------|-------|------------|
+| Tamaño máximo imagen | 15MB decodificado | Server-side: rechaza con 400 si excede |
+| Formatos permitidos | PNG, JPG, WebP | Server-side: valida MIME type |
+| Texto máximo (extract) | 2000 caracteres | Server-side: rechaza con 400 si excede |
+| Timeout Lambda (generate) | 60s | AWS: termina ejecución, retorna últimos logs |
+| Timeout Lambda (otros) | 30s | AWS: termina ejecución, retorna últimos logs |
+
+### Campos requeridos por endpoint
+
+**POST /generate-signature:**
+- `nombre`, `cargo`, `email`, `telefono`, `templateId`, `image`
+
+**POST /preview-signature:**
+- `nombre`, `cargo`, `email`, `templateId`
+
+**POST /extract-fields:**
+- `text`
+
+### Formato de email
+
+El validador acepta cualquier string que cumpla el patrón básico:
+```regex
+/^[^\s@]+@[^\s@]+\.[^\s@]+$/
+```
+
+Ejemplos válidos:
+- `carlos@empresa.com`
+- `maria.lopez@tech-corp.io`
+- `admin+test@example.co.uk`
+
+Ejemplos inválidos (retornan 400):
+- `carlos@empresa` (falta dominio de nivel superior)
+- `@empresa.com` (falta parte local)
+- `carlos @empresa.com` (espacios no permitidos)

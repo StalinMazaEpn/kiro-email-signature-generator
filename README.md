@@ -64,6 +64,17 @@ cd lambda && npm run dev
 
 Abre `http://localhost:3005` — funciona sin AWS ni servicios externos.
 
+## Scripts útiles
+
+| Script | Comando | Descripción |
+|--------|---------|-------------|
+| Dev server | `cd lambda && npm run dev` | Servidor local en puerto 3005 (frontend + API) |
+| Tests | `cd lambda && npm test` | Ejecuta 70 tests con coverage |
+| Tests (watch) | `cd lambda && npm run test:watch` | Modo watch para desarrollo |
+| Hash admin | `node scripts/generate-hash.js <password>` | Genera SHA-256 para panel admin |
+| Diagnóstico Azure | `node scripts/diagnose-azure.js` | Prueba versiones de API de Azure OpenAI |
+| Deploy AWS | `.\scripts\deploy_aws.ps1` | Despliegue automatizado a AWS (alternativa a `sam deploy`) |
+
 ## Funcionalidades
 
 | # | Feature | Descripción |
@@ -81,6 +92,20 @@ Abre `http://localhost:3005` — funciona sin AWS ni servicios externos.
 | 11 | Autenticación admin | SHA-256 con hash configurable via env var |
 | 12 | Datos de ejemplo | Botón para llenar formulario con datos de prueba |
 | 13 | Feedback de fallback | Indica cuando image-tools no está disponible y se usó la imagen original |
+
+## Límites y restricciones
+
+| Límite | Valor | Dónde se aplica |
+|--------|-------|-----------------|
+| Tamaño máximo de imagen | 15MB decodificado | Upload de foto/fondo en base64 |
+| Texto máximo para IA | 2000 caracteres | Endpoint `/extract-fields` |
+| Formatos de imagen soportados | PNG, JPG, WebP | Validación en upload |
+| Timeout Lambda (generate) | 60s | SAM template — procesamiento completo |
+| Timeout Lambda (otros) | 30s | SAM template — preview y extract |
+| Memoria Lambda (generate) | 512MB | SAM template — procesa imágenes |
+| Memoria Lambda (otros) | 256MB | SAM template — operaciones simples |
+| Body size máximo | 15MB | Dev server + API Gateway config |
+| Templates disponibles | 5 (3 públicas + 2 privadas) | Ver sección Templates |
 
 ## Variables de entorno
 
@@ -139,7 +164,33 @@ node scripts/generate-hash.js miPasswordSeguro123
    ```
 4. **Node.js 20.x** (para el build)
 
-### Parámetros que debes configurar
+### Opción 1: Despliegue automatizado (recomendado)
+
+Usa el script PowerShell que automatiza todo el proceso:
+
+```powershell
+# Despliegue completo (backend + frontend)
+.\scripts\deploy_aws.ps1
+
+# Con parámetros personalizados
+.\scripts\deploy_aws.ps1 -StackName "mi-firma-generator" -Region "us-west-2"
+
+# Solo frontend (si ya desplegaste el backend antes)
+.\scripts\deploy_aws.ps1 -FrontendOnly
+```
+
+**¿Qué hace el script?**
+1. Ejecuta `sam build` y `sam deploy`
+2. Obtiene las URLs del stack (API y Frontend)
+3. Genera `frontend/config.js` con la URL de la API
+4. Sube el frontend al bucket S3
+5. Limpia archivos temporales
+
+### Opción 2: Despliegue manual (paso a paso)
+
+Si prefieres control total sobre cada paso:
+
+#### Parámetros que debes configurar
 
 Al hacer `sam deploy --guided` te pedirá estos valores:
 
@@ -155,6 +206,9 @@ Al hacer `sam deploy --guided` te pedirá estos valores:
 | `AzureOpenAIKey` | (Si usas Azure) API key | `tu-azure-key` |
 | `AzureOpenAIDeployment` | (Si usas Azure) Nombre del deployment | `gpt-4o-mini` |
 | `AdminPasswordHash` | Hash SHA-256 del password admin | Genera con: `node scripts/generate-hash.js` |
+| `BudgetAlertEmail` | Email para recibir alertas de presupuesto | Opcional — se notifica al alcanzar 80% del límite de $1 USD |
+
+> **💰 Alarma de presupuesto incluida**: El template SAM incluye un AWS Budget con límite de $1 USD mensual. Si alcanzas el 80% del límite ($0.80), recibirás un email de alerta al correo configurado en `BudgetAlertEmail`. Esto te protege contra costos inesperados durante demos o pruebas.
 
 > **Tip**: Si no tienes image-tools, puedes dejarlo vacío. La app funcionará sin procesamiento de imagen (usará la foto original como banner).
 
@@ -319,12 +373,26 @@ Cobertura: config, validación, template engine, storage, AI provider factory y 
 |------|-------|
 | Frontend | HTML/JS vanilla + Tailwind CDN + Cropper.js |
 | Backend | Node.js 20, Express (dev) / AWS Lambda (prod) |
-| Templates | Mustache (3 diseños Outlook-compatible) |
+| Templates | Mustache (5 diseños Outlook-compatible) |
 | IA | Azure OpenAI (gpt-4o-mini) / AWS Bedrock (Claude Haiku) |
 | Imágenes | image-tools externo (composición persona + fondo) |
-| Storage | Filesystem local (dev) / AWS S3 (prod) |
+| Storage | Filesystem local (dev) / AWS S3 / Azure Storage (prod) |
 | Infraestructura | AWS SAM (Lambda + API Gateway + S3) |
 | Tests | Jest — 70 tests unitarios |
+
+### Dependencias principales
+
+| Dependencia | Uso |
+|-------------|-----|
+| `mustache` | Motor de renderizado de templates HTML |
+| `@aws-sdk/client-s3` | Cliente para AWS S3 (almacenamiento) |
+| `@aws-sdk/client-bedrock-runtime` | Cliente para AWS Bedrock (IA) |
+| `@azure/storage-blob` | Cliente para Azure Storage (alternativa a S3) |
+| `basic-ftp` | Cliente FTP para storage personalizado por plantilla |
+| `ssh2-sftp-client` | Cliente SFTP para storage seguro por plantilla |
+| `cropper.js` | Recorte interactivo de imágenes (frontend) |
+| `express` | Servidor HTTP para desarrollo local |
+| `jest` | Framework de testing unitario |
 
 ## Documentación
 
